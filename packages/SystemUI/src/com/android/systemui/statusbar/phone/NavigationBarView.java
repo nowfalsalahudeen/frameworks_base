@@ -256,29 +256,14 @@ public class NavigationBarView extends LinearLayout {
 
     private void safeSetAlpha(String id, float alpha)
     {
-        String viewname = "";
-        if (DEBUG)
-            switch(id)
-            {
-                case NavbarEditor.NAVBAR_BACK:
-                    viewname="back";
-                    break;
-                case NavbarEditor.NAVBAR_HOME:
-                    viewname="home";
-                    break;
-                case NavbarEditor.NAVBAR_RECENT:
-                    viewname="recent_apps";
-                    break;
-                default: 
-                    break;
-            }
+        String viewname = id;
             
         if (mCurrentView == null) {
             if (DEBUG) Slog.e(TAG, "mCurrentView is null in safeSetAlpha("+viewname+")");
             return;
         }
         
-        View v = mCurrentView.findViewByTag(id);
+        View v = mCurrentView.findViewWithTag(id);
         if (v == null)
         {
             if (DEBUG) Slog.e(TAG, "mCurrentView.findViewById is null in safeSetAlpha("+viewname+")");
@@ -306,7 +291,7 @@ public class NavigationBarView extends LinearLayout {
         safeSetAlpha(NavbarEditor.NAVBAR_RECENT, (0 != (hints & StatusBarManager.NAVIGATION_HINT_RECENT_NOP)) ? 0.5f : 1.0f);
 
   
-        View backview = mCurrentView.findViewByTag(NavbarEditor.NAVBAR_BACK);
+        View backview = mCurrentView.findViewWithTag(NavbarEditor.NAVBAR_BACK);
         if (backview != null)
         {
             ((ImageView)backview).setImageDrawable((0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_ALT))
