@@ -57,7 +57,7 @@ import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.DelegateViewHelper;
 
 public class NavigationBarView extends LinearLayout {
-    final static boolean DEBUG = false;
+    final static boolean DEBUG = true;
     final static String TAG = "PhoneStatusBar/NavigationBarView";
 
     final static boolean DEBUG_DEADZONE = false;
@@ -254,6 +254,43 @@ public class NavigationBarView extends LinearLayout {
         setNavigationIconHints(hints, false);
     }
 
+    private void safeSetAlpha(int id, float alpha)
+    {
+        String viewname = "";
+        if (DEBUG)
+            switch(id)
+            {
+                case R.id.back:
+                    viewname="back";
+                    break;
+                case R.id.home:
+                    viewname="home";
+                    break;
+                case R.id.recent_apps:
+                    viewname="recent_apps";
+                    break;
+                default: 
+                    break;
+            }
+            
+        if (mCurrentView == null) {
+            if (DEBUG) Slog.e(TAG, "mCurrentView is null in safeSetAlpha("+viewname+")");
+            return;
+        }
+        
+        View v = mCurrentView.findViewById(id);
+        if (v == null)
+        {
+            if (DEBUG) Slog.e(TAG, "mCurrentView.findViewById is null in safeSetAlpha("+viewname+")");
+            return;
+        }
+        
+        if (DEBUG)
+            Slog.v(TAG, "setting alpha of "+viewname+" to "+Float.toString(alpha));
+        mCurrentView.findViewById()
+        v.setAlpha(alpha);
+    }
+
     public void setNavigationIconHints(int hints, boolean force) {
         if (!force && hints == mNavigationIconHints) return;
 
@@ -265,12 +302,9 @@ public class NavigationBarView extends LinearLayout {
 
         mNavigationIconHints = hints;
 
-        mCurrentView.findViewById(R.id.back).setAlpha(
-            (0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_NOP)) ? 0.5f : 1.0f);
-        mCurrentView.findViewById(R.id.home).setAlpha(
-            (0 != (hints & StatusBarManager.NAVIGATION_HINT_HOME_NOP)) ? 0.5f : 1.0f);
-        mCurrentView.findViewById(R.id.recent_apps).setAlpha(
-            (0 != (hints & StatusBarManager.NAVIGATION_HINT_RECENT_NOP)) ? 0.5f : 1.0f);
+        safeSetAlpha(R.id.back, (0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_NOP)) ? 0.5f : 1.0f);
+        safeSetAlpha(R.id.home, (0 != (hints & StatusBarManager.NAVIGATION_HINT_HOME_NOP)) ? 0.5f : 1.0f);
+        safeSetAlpha(R.id.recent_apps, (0 != (hints & StatusBarManager.NAVIGATION_HINT_RECENT_NOP)) ? 0.5f : 1.0f);
 
         ((ImageView)mCurrentView.findViewById(R.id.back)).setImageDrawable(
             (0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_ALT))
