@@ -627,10 +627,9 @@ public class PhoneStatusBar extends BaseStatusBar {
         mNavigationBarView.reorient();
 
 		mNavigationBarView.setListener(mRecentsClickListener,mRecentsPanel);
-		View homeView = mNavigationBarView.findViewWithTag(NavbarEditor.NAVBAR_HOME);
         if (mHomeSearchActionListener != null)
         {	
-            View homeView = mCurrentView.findViewWithTag(NavbarEditor.NAVBAR_HOME);
+            View homeView = mNavigationBarView.findViewWithTag(NavbarEditor.NAVBAR_HOME);
             if (homeView != null)
             {
                 homeView.setOnTouchListener(mHomeSearchActionListener);
