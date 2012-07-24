@@ -69,6 +69,7 @@ public class NavigationBarView extends LinearLayout {
     final static String NAVBAR_EDIT = "android.intent.action.NAVBAR_EDIT";
 
     private static boolean EDIT_MODE;
+    private static boolean HOLD_HOME_RECENTS;
     private NavbarEditor mEditBar;
     private NavBarReceiver mNavBarReceiver;
     private OnClickListener mRecentsClickListener;
@@ -144,19 +145,10 @@ public class NavigationBarView extends LinearLayout {
         return EDIT_MODE;
     }
 
-    protected void setListener(OnClickListener RecentsClickListener, RecentsPanelView RecentsPanel) {
-        setListener(RecentsClickListener, RecentsPanel, null);
-    }
     
-    protected void setListener(OnClickListener RecentsClickListener, RecentsPanelView RecentsPanel, OnTouchListener mHomeSearchActionListener) {
+    protected void setListener(OnClickListener RecentsClickListener, RecentsPanelView RecentsPanel) {
         mRecentsClickListener = RecentsClickListener;
         mRecentsPanel = RecentsPanel;        
-        if (mHomeSearchActionListener != null)
-        {
-            View homeView = mCurrentView.findViewWithTag(NavbarEditor.NAVBAR_HOME);
-            if (homeView != null)
-                homeView.setOnTouchListener(mHomeSearchActionListener);
-        }
     }
 
     protected void toggleRecentListener(boolean enable) {

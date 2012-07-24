@@ -97,7 +97,7 @@ import java.util.ArrayList;
 
 public class PhoneStatusBar extends BaseStatusBar {
     static final String TAG = "PhoneStatusBar";
-    public static final boolean DEBUG = false;
+    public static final boolean DEBUG = true;
     public static final boolean SPEW = DEBUG;
     public static final boolean DUMPTRUCK = true; // extra dumpsys info
 
@@ -591,6 +591,7 @@ public class PhoneStatusBar extends BaseStatusBar {
 
     private View.OnClickListener mRecentsClickListener = new View.OnClickListener() {
         public void onClick(View v) {
+        	Slog.i(TAG, "PhoneStatusBar's recentsclicklistener went off!");
             toggleRecentApps();
         }
     };
@@ -604,6 +605,7 @@ public class PhoneStatusBar extends BaseStatusBar {
 
     View.OnTouchListener mHomeSearchActionListener = new View.OnTouchListener() {
         public boolean onTouch(View v, MotionEvent event) {
+	        Slog.i(TAG, "PhoneStatusBar's mHomeSearchActionListener went off!");
             switch(event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 if (!shouldDisableNavbarGestures() && !inKeyguardRestrictedInputMode()) {
@@ -624,7 +626,20 @@ public class PhoneStatusBar extends BaseStatusBar {
     private void prepareNavigationBarView() {
         mNavigationBarView.reorient();
 
-	mNavigationBarView.setListener(mRecentsClickListener,mRecentsPanel, mHomeSearchActionListener);
+		mNavigationBarView.setListener(mRecentsClickListener,mRecentsPanel);
+		View homeView = mNavigationBarView.findViewWithTag(NavbarEditor.NAVBAR_HOME);
+        if (mHomeSearchActionListener != null)
+        {	
+            View homeView = mCurrentView.findViewWithTag(NavbarEditor.NAVBAR_HOME);
+            if (homeView != null)
+            {
+                homeView.setOnTouchListener(mHomeSearchActionListener);
+                Slog.i(TAG, "mHomeSearchActionListener SET!");
+            }
+            else
+                Slog.i(TAG, "homeView is null!");
+        }
+        else Slog.i(TAG, "mHomeSearchActionListener is null!");
         updateSearchPanel();
     }
 
