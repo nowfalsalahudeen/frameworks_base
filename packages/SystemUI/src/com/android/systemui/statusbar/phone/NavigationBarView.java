@@ -57,7 +57,7 @@ import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.DelegateViewHelper;
 
 public class NavigationBarView extends LinearLayout {
-    final static boolean DEBUG = false;
+    final static boolean DEBUG = true;
     final static String TAG = "PhoneStatusBar/NavigationBarView";
 
     final static boolean DEBUG_DEADZONE = false;
@@ -246,6 +246,27 @@ public class NavigationBarView extends LinearLayout {
         setNavigationIconHints(hints, false);
     }
 
+    private void safeSetAlpha(String id, float alpha)
+    {
+        String viewname = id;
+            
+        if (mCurrentView == null) {
+            if (DEBUG) Slog.e(TAG, "mCurrentView is null in safeSetAlpha("+viewname+")");
+            return;
+        }
+        
+        View v = mCurrentView.findViewWithTag(id);
+        if (v == null)
+        {
+            if (DEBUG) Slog.e(TAG, "mCurrentView.findViewById is null in safeSetAlpha("+viewname+")");
+            return;
+        }
+        
+        if (DEBUG)
+            Slog.v(TAG, "setting alpha of "+viewname+" to "+Float.toString(alpha));        
+        v.setAlpha(alpha);
+    }
+
     public void setNavigationIconHints(int hints, boolean force) {
         if (!force && hints == mNavigationIconHints) return;
 
@@ -257,17 +278,18 @@ public class NavigationBarView extends LinearLayout {
 
         mNavigationIconHints = hints;
 
-        mCurrentView.findViewById(R.id.back).setAlpha(
-            (0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_NOP)) ? 0.5f : 1.0f);
-        mCurrentView.findViewById(R.id.home).setAlpha(
-            (0 != (hints & StatusBarManager.NAVIGATION_HINT_HOME_NOP)) ? 0.5f : 1.0f);
-        mCurrentView.findViewById(R.id.recent_apps).setAlpha(
-            (0 != (hints & StatusBarManager.NAVIGATION_HINT_RECENT_NOP)) ? 0.5f : 1.0f);
+        safeSetAlpha(NavbarEditor.NAVBAR_BACK, (0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_NOP)) ? 0.5f : 1.0f);
+        safeSetAlpha(NavbarEditor.NAVBAR_HOME, (0 != (hints & StatusBarManager.NAVIGATION_HINT_HOME_NOP)) ? 0.5f : 1.0f);
+        safeSetAlpha(NavbarEditor.NAVBAR_RECENT, (0 != (hints & StatusBarManager.NAVIGATION_HINT_RECENT_NOP)) ? 0.5f : 1.0f);
 
-        ((ImageView)mCurrentView.findViewById(R.id.back)).setImageDrawable(
-            (0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_ALT))
+  
+        View backview = mCurrentView.findViewWithTag(NavbarEditor.NAVBAR_BACK);
+        if (backview != null)
+        {
+            ((ImageView)backview).setImageDrawable((0 != (hints & StatusBarManager.NAVIGATION_HINT_BACK_ALT))
                 ? (mVertical ? mBackAltLandIcon : mBackAltIcon)
                 : (mVertical ? mBackLandIcon : mBackIcon));
+        }    
     }
 
     public void setDisabledFlags(int disabledFlags) {
