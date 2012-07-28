@@ -15,9 +15,13 @@
 
 package com.android.internal.policy.impl;
 
+import android.app.Activity;
+import android.net.Uri;
 import android.app.ActivityManager;
+import android.content.pm.ApplicationInfo;
 import android.app.ActivityManagerNative;
 import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.app.IActivityManager;
 import android.app.IUiModeManager;
 import android.app.ProgressDialog;
@@ -151,6 +155,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
+import android.app.admin.DevicePolicyManager;
+import android.content.pm.PackageInfo;
 
 /**
  * WindowManagerPolicy implementation for the Android phone UI.  This
@@ -827,44 +834,130 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             takeScreenshot();
         }
     };
+    
+    private ActivityManager mActivityManager;
+    private PackageInfo mPackageInfo;
+    private RunningAppProcessInfo mAppInfo;
+    private DevicePolicyManager mDpm;
+
+    private void forceStopPackage(String pkgName) {
+        if(mActivityManager==null)
+            mActivityManager = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
+        mActivityManager.forceStopPackage(pkgName);
+        checkForceStop();
+    }
+
+    private final BroadcastReceiver mCheckKillProcessesReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Slog.e(TAG,(getResultCode() != Activity.RESULT_CANCELED)?"HAHAHA I WIN!":"BLAST!");
+        }
+    };
+    
+    private void checkForceStop() {
+        if (mDpm == null)
+            mDpm = (DevicePolicyManager)mContext.getSystemService(Context.DEVICE_POLICY_SERVICE);
+        if (mDpm.packageHasActiveAdmins(mPackageInfo.packageName)) {
+            // User can't force stop device admin.
+        } else if ((mAppInfo.flags & ApplicationInfo.FLAG_STOPPED) == 0) {
+            // If the app isn't explicitly stopped, then always show the
+            // force stop button.
+        } else {
+            Intent intent = new Intent(Intent.ACTION_QUERY_PACKAGE_RESTART,
+                    Uri.fromParts("package", mPackageInfo.packageName, null));
+            intent.putExtra(Intent.EXTRA_PACKAGES, new String[] { mPackageInfo.packageName });
+            intent.putExtra(Intent.EXTRA_UID, mAppInfo.uid);
+            mContext.sendOrderedBroadcast(intent, null, mCheckKillProcessesReceiver, null,    Activity.RESULT_CANCELED, null, null);
+        }
+    }
+   
 
     Runnable mBackLongPress = new Runnable() {
         public void run() {
-            try {
-                boolean targetKilled = false;
-                IActivityManager am = ActivityManagerNative.getDefault();
-                List<RunningAppProcessInfo> apps = am.getRunningAppProcesses();
-                for (RunningAppProcessInfo appInfo : apps) {
-                    int uid = appInfo.uid;                    
-                    // Make sure it's a foreground user application (not system,
-                    // root, phone, etc.)
-                    if (uid >= Process.FIRST_APPLICATION_UID && uid <= Process.LAST_APPLICATION_UID
-                            && appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                        if (appInfo.pkgList != null && (appInfo.pkgList.length > 0)) {
-                            for (String pkg : appInfo.pkgList) {
-                                if (!pkg.equals("com.android.systemui")) {
-                                    am.forceStopPackage(pkg);
-                                    targetKilled = true;
-                                    break;
-                                }
-                            }
-                        } else {
-                            Process.killProcess(appInfo.pid);
-                            targetKilled = true;
-                        }
-                    }
-                    if (targetKilled) {
-                        performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
-                        Toast.makeText(mContext, R.string.app_killed_message, Toast.LENGTH_SHORT).show();
-                        break;
-                    }
-		    mBackJustKilled = true;
-                }
-            } catch (RemoteException remoteException) {
-                // Do nothing; just let it go.
+            boolean targetKilled = false;
+            mAppInfo = getForegroundApp();
+            int i=0;
+            for(String pkg : mAppInfo.pkgList)
+            {
+                Slog.e(TAG, ""+mAppInfo.processName+".pkgList["+Integer.toString(i)+"]="+pkg);
             }
+            PackageManager pm = mContext.getPackageManager();
+            try {
+                mPackageInfo = pm.getPackageInfo(mAppInfo.processName, PackageManager.GET_ACTIVITIES);
+            }catch(Exception e) {
+            }   
+            if (mPackageInfo != null)
+            {
+                Slog.e(TAG, "TRYING TO KILL: "+mPackageInfo.packageName);
+                forceStopPackage(mPackageInfo.packageName);
+                performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
+                Toast.makeText(mContext, R.string.app_killed_message, Toast.LENGTH_SHORT).show();
+    		    mBackJustKilled = true;
+		    }
+		    else		        
+                Slog.e(TAG, "Unable to locate package for: "+mAppInfo.processName);
         }
     };
+    
+    private RunningAppProcessInfo getForegroundApp() {
+        RunningAppProcessInfo result=null, info=null;
+
+        if(mActivityManager==null)
+            mActivityManager = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
+        List <RunningAppProcessInfo> l = mActivityManager.getRunningAppProcesses();
+        Iterator <RunningAppProcessInfo> i = l.iterator();
+        while(i.hasNext()){
+            info = i.next();
+            if(info.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                    && !isRunningService(info.processName)){
+                result=info;
+                break;
+            }
+        }
+        return result;
+    }
+
+    private ComponentName getActivityForApp(RunningAppProcessInfo target){
+        ComponentName result=null;
+        ActivityManager.RunningTaskInfo info;
+
+        if(target==null)
+            return null;
+
+        if(mActivityManager==null)
+            mActivityManager = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
+        List <ActivityManager.RunningTaskInfo> l = mActivityManager.getRunningTasks(9999);
+        Iterator <ActivityManager.RunningTaskInfo> i = l.iterator();
+
+        while(i.hasNext()){
+            info=i.next();
+            if(info.baseActivity.getPackageName().equals(target.processName)){
+                result=info.topActivity;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    private boolean isRunningService(String processname){
+        if(processname==null || processname.isEmpty())
+            return false;
+
+        RunningServiceInfo service;
+
+        if(mActivityManager==null)
+            mActivityManager = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
+        List <RunningServiceInfo> l = mActivityManager.getRunningServices(9999);
+        Iterator <RunningServiceInfo> i = l.iterator();
+        while(i.hasNext()){
+            service = i.next();
+            if(service.process.equals(processname))
+                return true;
+        }
+
+        return false;
+    }
 
 
     void showGlobalActionsDialog() {
@@ -966,6 +1059,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         });
     }
+
+
 
     /** {@inheritDoc} */
     public void init(Context context, IWindowManager windowManager,
