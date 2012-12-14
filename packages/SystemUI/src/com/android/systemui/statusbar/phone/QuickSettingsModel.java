@@ -76,7 +76,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     // Sett InputMethoManagerService
     private static final String TAG_TRY_SUPPRESSING_IME_SWITCHER = "TrySuppressingImeSwitcher";
 
-//    private String mFastChargePath;
+    private String mFastChargePath;
     
     private int dataState = -1;
 
@@ -283,9 +283,9 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     private RefreshCallback mSyncCallback;
     private State mSyncState = new State();
 
-//    private QuickSettingsTileView mTorchTile;
-//    private RefreshCallback mTorchCallback;
-//    private State mTorchState = new State();
+    private QuickSettingsTileView mTorchTile;
+    private RefreshCallback mTorchCallback;
+    private State mTorchState = new State();
 
     private QuickSettingsTileView mWifiTetherTile;
     private RefreshCallback mWifiTetherCallback;
@@ -322,7 +322,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             }
         };
 
-//        mFastChargePath = mContext.getString(com.android.internal.R.string.config_fastChargePath);
+        mFastChargePath = mContext.getString(com.android.internal.R.string.config_fastChargePath);
         mNextAlarmObserver = new NextAlarmObserver(mHandler);
         mNextAlarmObserver.startObserving();
         mBugreportObserver = new BugreportObserver(mHandler);
@@ -370,16 +370,16 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
                 refreshNFCTile();
             if (toggle.equals(QuickSettings.SYNC_TOGGLE))
                 refreshSyncTile();
-//            if (toggle.equals(QuickSettings.TORCH_TOGGLE))
-//                refreshTorchTile();
+            if (toggle.equals(QuickSettings.TORCH_TOGGLE))
+                refreshTorchTile();
             if (toggle.equals(QuickSettings.WIFI_TETHER_TOGGLE))
                 refreshWifiTetherTile();
             if (toggle.equals(QuickSettings.USB_TETHER_TOGGLE))
                 refreshUSBTetherTile();
            /* if (toggle.equals(QuickSettings.BT_TETHER_TOGGLE))
                 refreshBTTetherTile();  */
-//            if (toggle.equals(QuickSettings.FCHARGE_TOGGLE))
-//                refreshFChargeTile();
+            if (toggle.equals(QuickSettings.FCHARGE_TOGGLE))
+                refreshFChargeTile();
             if (toggle.equals(QuickSettings.TWOG_TOGGLE))
                 refresh2gTile();
             if (toggle.equals(QuickSettings.LTE_TOGGLE))
@@ -388,20 +388,20 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
 
     }
 
-//    void refreshFChargeTile() {
-//        new AsyncTask<Void, Void, Boolean>() {
-//            @Override
-//            protected Boolean doInBackground(Void... params) {
-//                return isFastChargeOn();
-//            }
+    void refreshFChargeTile() {
+        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                return isFastChargeOn();
+            }
 
-//            @Override
-//            protected void onPostExecute(Boolean result) {
-//                Prefs.setLastFastChargeState(mContext, result);
-//                updateFastChargeTile(result);
-//            }
-//        }.execute();
-//    }
+            @Override
+            protected void onPostExecute(Boolean result) {
+                Prefs.setLastFastChargeState(mContext, result);
+                updateFastChargeTile(result);
+            }
+        }.execute();
+    }
 
     void removeAllViews() {
         if (mUserTile != null)
@@ -937,7 +937,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         }
     }
 
-/*    // Fcharge
+    // Fcharge
     void addFChargeTile(QuickSettingsTileView view, RefreshCallback cb) {
         mFChargeTile = view;
         mFChargeCallback = cb;
@@ -959,7 +959,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             }
         }
     }
-*/
+
     // Sync
     void addSyncTile(QuickSettingsTileView view, RefreshCallback cb) {
         mSyncTile = view;
@@ -1161,32 +1161,32 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     }
 
     // Torch
-//    void addTorchTile(QuickSettingsTileView view, RefreshCallback cb) {
-//        mTorchTile = view;
-//        mTorchCallback = cb;
-//        onTorchChanged();
-//    }
+    void addTorchTile(QuickSettingsTileView view, RefreshCallback cb) {
+        mTorchTile = view;
+        mTorchCallback = cb;
+        onTorchChanged();
+    }
 
-//    void onTorchChanged() {
-//        boolean enabled = Settings.System.getBoolean(mContext.getContentResolver(), Settings.System.TORCH_STATE, false);
-//        mTorchState.enabled = enabled;
-//        mTorchState.iconId = enabled
-//                ? R.drawable.ic_qs_torch_on
-//                : R.drawable.ic_qs_torch_off;
-//        mTorchState.label = enabled
-//                ? mContext.getString(R.string.quick_settings_torch_on_label)
-//                : mContext.getString(R.string.quick_settings_torch_off_label);
+    void onTorchChanged() {
+        boolean enabled = Settings.System.getBoolean(mContext.getContentResolver(), Settings.System.TORCH_STATE, false);
+        mTorchState.enabled = enabled;
+        mTorchState.iconId = enabled
+                ? R.drawable.ic_qs_torch_on
+                : R.drawable.ic_qs_torch_off;
+        mTorchState.label = enabled
+                ? mContext.getString(R.string.quick_settings_torch_on_label)
+                : mContext.getString(R.string.quick_settings_torch_off_label);
 
-//        if (mTorchTile != null && mTorchCallback != null) {
-//            mTorchCallback.refreshView(mTorchTile, mTorchState);
-//        }
-//    }
+        if (mTorchTile != null && mTorchCallback != null) {
+            mTorchCallback.refreshView(mTorchTile, mTorchState);
+        }
+    }
 
-//    void refreshTorchTile() {
-//        if (mTorchTile != null) {
-//            onTorchChanged();
-//        }
-//    }
+    void refreshTorchTile() {
+        if (mTorchTile != null) {
+            onTorchChanged();
+        }
+    }
 
     // Brightness
     void addBrightnessTile(QuickSettingsTileView view, RefreshCallback cb) {
@@ -1272,7 +1272,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         mNfcAdapter = adapter;
     }
 
-/*    protected boolean isFastChargeOn() {
+    protected boolean isFastChargeOn() {
         if(mFastChargePath == null || mFastChargePath.isEmpty()) {
             return false;
         }
@@ -1299,4 +1299,4 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         }
         return "1".equals(content) || "Y".equalsIgnoreCase(content);
     }
-*/ } 
+}
