@@ -3841,7 +3841,7 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
                 if (mOverScrollGlow != null) {
                     mOverScrollGlow.absorbGlow(x, y, oldX, oldY, rangeX, rangeY);
                 }
-                mSendScroll.setPostpone(true);
+                mSendScroll.setPostpone(false);
             } else {
                 if (mTouchMode == TOUCH_DRAG_LAYER_MODE) {
                     // Update the layer position instead of WebView.

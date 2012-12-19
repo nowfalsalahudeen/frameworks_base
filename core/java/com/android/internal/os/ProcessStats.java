@@ -154,7 +154,7 @@ public class ProcessStats {
 
     private boolean mFirst = true;
 
-    private byte[] mBuffer = new byte[4096];
+    private byte[] mBuffer = new byte[2048];
 
     /**
      * The time in microseconds that the CPU has been running at each speed.
@@ -557,7 +557,7 @@ public class ProcessStats {
         long[] tempTimes = out;
         long[] tempSpeeds = mCpuSpeeds;
         final int MAX_SPEEDS = 60;
-        if (out == null) {
+        if (out == null || out.length == 0) {
             tempTimes = new long[MAX_SPEEDS]; // Hopefully no more than that
             tempSpeeds = new long[MAX_SPEEDS];
         }
@@ -582,6 +582,9 @@ public class ProcessStats {
                     }
                 } catch (NumberFormatException nfe) {
                     Slog.i(TAG, "Unable to parse time_in_state");
+                } catch (java.util.NoSuchElementException nsee) {
+                    Slog.i(TAG, "time_in_state changed size halfway?");
+                    break;
                 }
             }
         }
