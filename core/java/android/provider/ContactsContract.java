@@ -8481,5 +8481,4 @@ public final class ContactsContract {
         }
     }
 
-
 }
