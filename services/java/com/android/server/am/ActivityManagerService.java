@@ -2099,6 +2099,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     }
                 } catch (PackageManager.NameNotFoundException e) {
                     Slog.w(TAG, "Unable to retrieve gids", e);
+                    return;
                 }
 
                 /*
@@ -7640,7 +7641,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     public boolean testIsSystemReady() {
         // no need to synchronize(this) just to read & return the value
-        return mSystemReady;
+        return mSystemReady && mProcessesReady;
     }
     
     private static File getCalledPreBootReceiversFile() {

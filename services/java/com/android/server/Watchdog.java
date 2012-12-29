@@ -376,7 +376,6 @@ public class Watchdog extends Thread {
     public void run() {
         boolean waitedHalf = false;
         while (true) {
-            mCompleted = false;
             mHandler.sendEmptyMessage(MONITOR);
 
             synchronized (this) {
@@ -399,6 +398,7 @@ public class Watchdog extends Thread {
                 if (mCompleted && !mForceKillSystem) {
                     // The monitors have returned.
                     waitedHalf = false;
+                    mCompleted = false;
                     continue;
                 }
 
@@ -464,6 +464,7 @@ public class Watchdog extends Thread {
             }
 
             waitedHalf = false;
+            mCompleted = false;
         }
     }
 
