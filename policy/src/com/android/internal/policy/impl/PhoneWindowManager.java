@@ -170,8 +170,8 @@ import java.util.List;
  */
 public class PhoneWindowManager implements WindowManagerPolicy {
     static final String TAG = "WindowManager";
-    static final boolean DEBUG = true;
-    static final boolean localLOGV = true;
+    static final boolean DEBUG = false;
+    static final boolean localLOGV = false;
     static final boolean DEBUG_LAYOUT = false;
     static final boolean DEBUG_INPUT = false;
     static final boolean DEBUG_STARTING_WINDOW = false;
@@ -427,7 +427,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static final Rect mTmpContentFrame = new Rect();
     static final Rect mTmpVisibleFrame = new Rect();
     static final Rect mTmpNavigationFrame = new Rect();
-    
+
     WindowState mTopFullscreenOpaqueWindowState;
     boolean mTopIsFullscreen;
     boolean mForceStatusBar;
@@ -501,7 +501,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public static final String INTENT_TORCH_OFF = "com.android.systemui.INTENT_TORCH_OFF";
     boolean mFastTorchOn; // local state of torch
     boolean mEnableQuickTorch; // System.Setting
-    private SharedPreferences prefs;
 
     // Fallback actions by key code.
     private final SparseArray<KeyCharacterMap.FallbackAction> mFallbackActions =
@@ -567,7 +566,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.USER_ROTATION), false, this,
-                    UserHandle.USER_ALL);            
+                    UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.SCREEN_OFF_TIMEOUT), false, this,
                     UserHandle.USER_ALL);
@@ -607,12 +606,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             updateRotation(false);
         }
     }
-    
+
     class MyOrientationListener extends WindowOrientationListener {
         MyOrientationListener(Context context) {
             super(context);
         }
-        
+
         @Override
         public void onProposedRotationChanged(int rotation) {
             if (localLOGV) Log.v(TAG, "onProposedRotationChanged, rotation=" + rotation);
@@ -666,7 +665,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
         return true;
     }
-    
+
     /*
      * Various use cases for invoking this function
      * screen turning off, should always disable listeners if already enabled
@@ -730,9 +729,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mPendingPowerKeyUpCanceled = true;
         }
     }
-    
+
     Runnable mTorchOn = new Runnable() {
-        public void run() {        
+        public void run() {
             Intent i = new Intent(INTENT_TORCH_ON);
             i.setAction(INTENT_TORCH_ON);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -742,7 +741,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     };
 
     Runnable mTorchOff = new Runnable() {
-        public void run() {        
+        public void run() {
             Intent i = new Intent(INTENT_TORCH_OFF);
             i.setAction(INTENT_TORCH_OFF);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -1156,10 +1155,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mNavigationBarCanMove = false;
             Settings.System.putInt(mContext.getContentResolver(),
                     Settings.System.CURRENT_UI_MODE, 2);
-//	    } else {
-			// 720dp tablet UI with single combined status & nav bar
-//			mHasSystemNavBar = true;                 commented out to give tablets their UI back
-//			mNavigationBarCanMove = false;
+//          } else {
+// 720dp tablet UI with single combined status & nav bar
+//      mHasSystemNavBar = true; commented out to give tablets their UI back
+//      mNavigationBarCanMove = false;
         }
 
          if (!mHasSystemNavBar) {
@@ -1179,7 +1178,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             } else {
                  mHasNavigationBar = mHasNavigationBar &&
                          Settings.System.getBoolean(mContext.getContentResolver(),
-                                 Settings.System.NAVIGATION_BAR_SHOW_NOW, mHasNavigationBar);    
+                                 Settings.System.NAVIGATION_BAR_SHOW_NOW, mHasNavigationBar);
             }
         } else {
             // Allow a system property to override this. Used by the emulator.
@@ -1192,7 +1191,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     mHasNavigationBar = true;
             }
         }
-        
+
         if (!mHasNavigationBar) {
              mNavigationBarWidthForRotation[mPortraitRotation] =
                      mNavigationBarWidthForRotation[mUpsideDownRotation] =
@@ -1918,7 +1917,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     static final boolean PRINT_ANIM = false;
-    
+
     /** {@inheritDoc} */
     public int selectAnimationLw(WindowState win, int transit) {
         if (PRINT_ANIM) Log.i(TAG, "selectAnimation in " + win
@@ -2056,7 +2055,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                             mStatusBarService = null;
                         }
                     }
-                    
+
                     mHomePressed = false;
                     if (!canceled) {
                         // If an incoming call is ringing, HOME is totally disabled.
@@ -2395,7 +2394,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         Intent intent = new Intent(Intent.ACTION_SEARCH_LONG_PRESS);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
-            // TODO: This only stops the factory-installed search manager.  
+            // TODO: This only stops the factory-installed search manager.
             // Need to formalize an API to handle others
             SearchManager searchManager = getSearchManager();
             if (searchManager != null) {
@@ -3840,16 +3839,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
         return result;
     }
-    
+
     void handleChangeTorchState(boolean on) {
         mHandler.removeCallbacks(mTorchOn);
         mHandler.removeCallbacks(mTorchOff);
         if (on && !mFastTorchOn)
-        {        
+        {
             mHandler.postDelayed(mTorchOn, ViewConfiguration.getLongPressTimeout());
         }
         else if (mFastTorchOn)
-        {        
+        {
             mFastTorchOn = false;
             mHandler.post(mTorchOff);
         }
@@ -4400,7 +4399,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 ? HapticFeedbackConstants.SAFE_MODE_ENABLED
                 : HapticFeedbackConstants.SAFE_MODE_DISABLED, true);
     }
-    
+
     static long[] getLongIntArray(Resources r, int resid) {
         int[] ar = r.getIntArray(resid);
         if (ar == null) {
@@ -4412,7 +4411,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
         return out;
     }
-    
+
     /** {@inheritDoc} */
     public void systemReady() {
         if (mKeyguardMediator != null) {
@@ -4607,7 +4606,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         // We don't have dock home anymore. Home is home. If you lived here, you'd be home by now.
         mContext.startActivityAsUser(mHomeIntent, UserHandle.CURRENT);
     }
-    
+
     /**
      * goes to the home screen
      * @return whether it did anything
@@ -4647,7 +4646,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
         return true;
     }
-    
+
     public void setCurrentOrientationLw(int newOrientation) {
         synchronized (mLock) {
             if (newOrientation != mCurrentAppOrientation) {
