@@ -1068,6 +1068,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
 
             mFChargeCallback.refreshView(mFChargeTile, mFChargeState);
         }
+        else Log.e("NUKEDEBUG", "OH NOEZ! mFChargeTile == null || mFChargeCallback == null");
     }
 
     // Sync
