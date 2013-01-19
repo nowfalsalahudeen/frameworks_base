@@ -2737,6 +2737,8 @@ public final class Settings {
                 "navigation_custom_app_intent_2",
                 "navigation_custom_app_intent_3",
                 "navigation_custom_app_intent_4",
+                "navigation_custom_app_intent_5",
+                "navigation_custom_app_intent_6",
         };
 
         /**
@@ -2750,6 +2752,8 @@ public final class Settings {
                 "navigation_longpress_app_intent_2",
                 "navigation_longpress_app_intent_3",
                 "navigation_longpress_app_intent_4",
+                "navigation_longpress_app_intent_5",
+                "navigation_longpress_app_intent_6",
         };
 
         /**
@@ -2765,6 +2769,8 @@ public final class Settings {
                 "navigation_custom_app_icon_2",
                 "navigation_custom_app_icon_3",
                 "navigation_custom_app_icon_4",
+                "navigation_custom_app_icon_5",
+                "navigation_custom_app_icon_6",
         };
 
         /**
