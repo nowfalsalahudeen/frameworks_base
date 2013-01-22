@@ -70,6 +70,8 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         LocationGpsStateChangeCallback,
         BrightnessStateChangeCallback {
 
+    private static final String TAG = "QuickSettingsModel";
+
     // Sett InputMethoManagerService
     private static final String TAG_TRY_SUPPRESSING_IME_SWITCHER = "TrySuppressingImeSwitcher";
 
@@ -200,8 +202,6 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     private final BrightnessObserver mBrightnessObserver;
     private NfcAdapter mNfcAdapter;
 
-    private NfcAdapter adapter;
-
     private QuickSettingsTileView mUserTile;
     private RefreshCallback mUserCallback;
     private UserState mUserState = new UserState();
@@ -316,7 +316,6 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
 
     public QuickSettingsModel(Context context) {
         mContext = context;
-        adapter = NfcAdapter.getDefaultAdapter(mContext);
         mHandler = new Handler();
         mUserTracker = new CurrentUserTracker(mContext) {
             @Override
@@ -347,7 +346,10 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         @Override
         public void onReceive(Context context, Intent intent) {
             if (NfcAdapter.ACTION_ADAPTER_STATE_CHANGED.equals(intent.getAction())) {
-                refreshNFCTile();
+                if (getNfcAdapter() != null)
+                {
+                    refreshNFCTile();
+                }
             }
         }
     };
@@ -1106,10 +1108,10 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     }
 
     void onNFCChanged() {
-        boolean enabled = false;
-        if (mNfcAdapter != null) {
-            enabled = mNfcAdapter.isEnabled();
-        }
+        boolean enabled = false;        
+        if (getNfcAdapter() != null) {
+            enabled = getNfcAdapter().isEnabled();
+        }            
         mNFCState.enabled = enabled;
         mNFCState.iconId = enabled
                 ? R.drawable.ic_qs_nfc_on
@@ -1311,9 +1313,32 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         onNextAlarmChanged();
         onBugreportChanged();
     }
-
-    public void setNfcAdapter(NfcAdapter adapter) {
-        mNfcAdapter = adapter;
+    public NfcAdapter getNfcAdapter() {
+        if (mNfcAdapter == null)
+        {
+            Log.w(TAG, "FML - nfcadapter was null, so getting a new one.");
+            try
+            {
+                mNfcAdapter = NfcAdapter.getDefaultAdapter(mContext);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                Log.e(TAG,"Exception while getting nfc adapter: "+e);
+            }
+            if (mNfcAdapter == null)
+            {
+                Log.w(TAG, "FML - nfcadapter was null after non-deprecated get.");
+                try
+                {
+                    mNfcAdapter = NfcAdapter.getDefaultAdapter();
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    Log.e(TAG,"Exception while getting nfc adapter with deprecated backup method: "+e);
+                }
+            }
+        }
+        return mNfcAdapter;
     }
 
     protected boolean isFastChargeOn() {
