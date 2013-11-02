@@ -34,7 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
-class ContentProviderRecord {
+final class ContentProviderRecord {
     final ActivityManagerService service;
     public final ProviderInfo info;
     final int uid;

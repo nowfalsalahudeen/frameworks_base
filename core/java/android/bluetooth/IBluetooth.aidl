@@ -87,4 +87,6 @@ interface IBluetooth
     ParcelFileDescriptor createSocketChannel(int type, in String serviceName, in ParcelUuid uuid, int port, int flag);
     int setSocketOpt(int type, int port, int optionName, in byte [] optionVal, int optionLen);
     int getSocketOpt(int type, int port, int optionName, out byte [] optionVal);
+
+    boolean configHciSnoopLog(boolean enable);
 }

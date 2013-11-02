@@ -39,12 +39,14 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 import android.widget.Toast;
 
+<<<<<<< HEAD
 import com.android.internal.util.MemInfoReader;
 import com.android.internal.view.RotationPolicy;
 import com.android.internal.telephony.Phone;
@@ -52,10 +54,20 @@ import com.android.internal.telephony.PhoneConstants;
 import com.android.systemui.R;
 import com.android.systemui.settings.CurrentUserTracker;
 import com.android.systemui.statusbar.policy.BrightnessController.BrightnessStateChangeCallback;
+=======
+import com.android.systemui.R;
+import com.android.systemui.settings.BrightnessController.BrightnessStateChangeCallback;
+import com.android.systemui.settings.CurrentUserTracker;
+>>>>>>> android-4.4_r1
 import com.android.systemui.statusbar.policy.BatteryController.BatteryStateChangeCallback;
-import com.android.systemui.statusbar.policy.LocationController.LocationGpsStateChangeCallback;
+import com.android.systemui.statusbar.policy.LocationController.LocationSettingsChangeCallback;
 import com.android.systemui.statusbar.policy.NetworkController.NetworkSignalChangedCallback;
+<<<<<<< HEAD
 import com.android.systemui.statusbar.policy.Prefs;
+=======
+import com.android.systemui.statusbar.policy.RotationLockController;
+import com.android.systemui.statusbar.policy.RotationLockController.RotationLockControllerCallback;
+>>>>>>> android-4.4_r1
 
 import java.io.File;
 import java.io.FileReader;
@@ -63,13 +75,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+<<<<<<< HEAD
 import com.android.systemui.vanir.FlushMemory;
 
+=======
+>>>>>>> android-4.4_r1
 class QuickSettingsModel implements BluetoothStateChangeCallback,
         NetworkSignalChangedCallback,
         BatteryStateChangeCallback,
-        LocationGpsStateChangeCallback,
-        BrightnessStateChangeCallback {
+        BrightnessStateChangeCallback,
+        RotationLockControllerCallback,
+        LocationSettingsChangeCallback {
 
     private static final String TAG = "QuickSettingsModel";
 
@@ -99,15 +115,27 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         int batteryLevel;
         boolean pluggedIn;
     }
+<<<<<<< HEAD
 
     static class RSSIState extends State {
+=======
+    static class ActivityState extends State {
+        boolean activityIn;
+        boolean activityOut;
+    }
+    static class RSSIState extends ActivityState {
+>>>>>>> android-4.4_r1
         int signalIconId;
         String signalContentDescription;
         int dataTypeIconId;
         String dataContentDescription;
     }
+<<<<<<< HEAD
 
     static class WifiState extends State {
+=======
+    static class WifiState extends ActivityState {
+>>>>>>> android-4.4_r1
         String signalContentDescription;
         boolean connected;
     }
@@ -123,6 +151,9 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     public static class BluetoothState extends State {
         boolean connected = false;
         String stateContentDescription;
+    }
+    public static class RotationLockState extends State {
+        boolean visible = false;
     }
 
     /** The callback to update a given tile. */
@@ -207,7 +238,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
 
     private QuickSettingsTileView mRotationLockTile;
     private RefreshCallback mRotationLockCallback;
-    private State mRotationLockState = new State();
+    private RotationLockState mRotationLockState = new RotationLockState();
 
     private QuickSettingsTileView mVibrateTile;
     private RefreshCallback mVibrateCallback;
@@ -285,6 +316,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     private RefreshCallback mSettingsCallback;
     private State mSettingsState = new State();
 
+<<<<<<< HEAD
     private QuickSettingsTileView mRebootMenuTile;
     private RefreshCallback mRebootMenuCallback;
     private State mRebootMenuState = new State();
@@ -319,6 +351,13 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             onNextAlarmChanged();
         }
     }
+=======
+    private QuickSettingsTileView mSslCaCertWarningTile;
+    private RefreshCallback mSslCaCertWarningCallback;
+    private State mSslCaCertWarningState = new State();
+
+    private RotationLockController mRotationLockController;
+>>>>>>> android-4.4_r1
 
     public QuickSettingsModel(Context context) {
         mContext = context;
@@ -349,6 +388,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         new SettingsObserver(mHandler).startObserving();
     }
 
+<<<<<<< HEAD
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -427,6 +467,16 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             mUserTile.removeAllViews();
         if (mSettingsTile != null)
             mSettingsTile.removeAllViews();
+=======
+    void updateResources() {
+        refreshSettingsTile();
+        refreshBatteryTile();
+        refreshBluetoothTile();
+        refreshBrightnessTile();
+        refreshRotationLockTile();
+        refreshRssiTile();
+        refreshLocationTile();
+>>>>>>> android-4.4_r1
     }
 
     // Settings
@@ -581,7 +631,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             return null;
         final int length = string.length();
         if (string.endsWith(".")) {
-            string.substring(0, length - 1);
+            return string.substring(0, length - 1);
         }
         return string;
     }
@@ -596,6 +646,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     // NetworkSignalChanged callback
     @Override
     public void onWifiSignalChanged(boolean enabled, int wifiSignalIconId,
+            boolean activityIn, boolean activityOut,
             String wifiSignalContentDescription, String enabledDesc) {
         // TODO: If view is in awaiting state, disable
         Resources r = mContext.getResources();
@@ -604,6 +655,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         boolean wifiNotConnected = (wifiSignalIconId > 0) && (enabledDesc == null);
         mWifiState.enabled = enabled;
         mWifiState.connected = wifiConnected;
+<<<<<<< HEAD
         synchronized(wifilock) {
             if (wifiConnected) {
                 mWifiState.iconId = wifiSignalIconId;
@@ -621,6 +673,22 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
                 mWifiState.signalContentDescription = r.getString(R.string.accessibility_wifi_off);
                 isWifiConnected = false;
             }
+=======
+        mWifiState.activityIn = enabled && activityIn;
+        mWifiState.activityOut = enabled && activityOut;
+        if (wifiConnected) {
+            mWifiState.iconId = wifiSignalIconId;
+            mWifiState.label = removeDoubleQuotes(enabledDesc);
+            mWifiState.signalContentDescription = wifiSignalContentDescription;
+        } else if (wifiNotConnected) {
+            mWifiState.iconId = R.drawable.ic_qs_wifi_0;
+            mWifiState.label = r.getString(R.string.quick_settings_wifi_label);
+            mWifiState.signalContentDescription = r.getString(R.string.accessibility_no_wifi);
+        } else {
+            mWifiState.iconId = R.drawable.ic_qs_wifi_no_network;
+            mWifiState.label = r.getString(R.string.quick_settings_wifi_off_label);
+            mWifiState.signalContentDescription = r.getString(R.string.accessibility_wifi_off);
+>>>>>>> android-4.4_r1
         }
         if (togglesContain(QuickSettings.WIFI_TOGGLE))
             mWifiCallback.refreshView(mWifiTile, mWifiState);
@@ -640,7 +708,8 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     @Override
     public void onMobileDataSignalChanged(
             boolean enabled, int mobileSignalIconId, String signalContentDescription,
-            int dataTypeIconId, String dataContentDescription, String enabledDesc) {
+            int dataTypeIconId, boolean activityIn, boolean activityOut,
+            String dataContentDescription,String enabledDesc) {
         if (deviceHasMobileData()) {
             // TODO: If view is in awaiting state, disable
             Resources r = mContext.getResources();
@@ -653,6 +722,8 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             mRSSIState.dataTypeIconId = enabled && (dataTypeIconId > 0) && !mWifiState.enabled
                     ? dataTypeIconId
                     : 0;
+            mRSSIState.activityIn = enabled && activityIn;
+            mRSSIState.activityOut = enabled && activityOut;
             mRSSIState.dataContentDescription = enabled && (dataTypeIconId > 0) && !mWifiState.enabled
                     ? dataContentDescription
                     : r.getString(R.string.accessibility_no_data);
@@ -661,6 +732,14 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
                     : r.getString(R.string.quick_settings_rssi_emergency_only);
             if (togglesContain(QuickSettings.SIGNAL_TOGGLE))
                 mRSSICallback.refreshView(mRSSITile, mRSSIState);
+        }
+    }
+
+    void refreshRssiTile() {
+        if (mRSSITile != null) {
+            // We reinflate the original view due to potential styling changes that may have
+            // taken place due to a configuration change.
+            mRSSITile.reinflateContent(LayoutInflater.from(mContext));
         }
     }
 
@@ -789,6 +868,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         mLocationCallback.refreshView(mLocationTile, mLocationState);
     }
 
+<<<<<<< HEAD
     // LocationController callback
     @Override
     public void onLocationGpsStateChanged(boolean inUse, boolean hasFix, String description) {
@@ -800,6 +880,25 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         mLocationState.label = description;
         if (togglesContain(QuickSettings.GPS_TOGGLE))
             mLocationCallback.refreshView(mLocationTile, mLocationState);
+=======
+    void refreshLocationTile() {
+        if (mLocationTile != null) {
+            onLocationSettingsChanged(mLocationState.enabled);
+        }
+    }
+
+    @Override
+    public void onLocationSettingsChanged(boolean locationEnabled) {
+        int textResId = locationEnabled ? R.string.quick_settings_location_label
+                : R.string.quick_settings_location_off_label;
+        String label = mContext.getText(textResId).toString();
+        int locationIconId = locationEnabled
+                ? R.drawable.ic_qs_location_on : R.drawable.ic_qs_location_off;
+        mLocationState.enabled = locationEnabled;
+        mLocationState.label = label;
+        mLocationState.iconId = locationIconId;
+        mLocationCallback.refreshView(mLocationTile, mLocationState);
+>>>>>>> android-4.4_r1
     }
 
     // Bug report
@@ -818,7 +917,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         } catch (SettingNotFoundException e) {
         }
 
-        mBugreportState.enabled = enabled;
+        mBugreportState.enabled = enabled && mUserTracker.isCurrentUserOwner();
         mBugreportCallback.refreshView(mBugreportTile, mBugreportState);
     }
 
@@ -941,27 +1040,39 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     }
 
     // Rotation lock
-    void addRotationLockTile(QuickSettingsTileView view, RefreshCallback cb) {
+    void addRotationLockTile(QuickSettingsTileView view,
+            RotationLockController rotationLockController,
+            RefreshCallback cb) {
         mRotationLockTile = view;
         mRotationLockCallback = cb;
+        mRotationLockController = rotationLockController;
         onRotationLockChanged();
     }
 
     void onRotationLockChanged() {
-        boolean locked = RotationPolicy.isRotationLocked(mContext);
-        mRotationLockState.enabled = locked;
-        mRotationLockState.iconId = locked
+        onRotationLockStateChanged(mRotationLockController.isRotationLocked(),
+                mRotationLockController.isRotationLockAffordanceVisible());
+    }
+    @Override
+    public void onRotationLockStateChanged(boolean rotationLocked, boolean affordanceVisible) {
+        mRotationLockState.visible = affordanceVisible;
+        mRotationLockState.enabled = rotationLocked;
+        mRotationLockState.iconId = rotationLocked
                 ? R.drawable.ic_qs_rotation_locked
                 : R.drawable.ic_qs_auto_rotate;
-        mRotationLockState.label = locked
+        mRotationLockState.label = rotationLocked
                 ? mContext.getString(R.string.quick_settings_rotation_locked_label)
                 : mContext.getString(R.string.quick_settings_rotation_unlocked_label);
+<<<<<<< HEAD
 
         // may be called before addRotationLockTile due to
         // RotationPolicyListener in QuickSettings
         if (mRotationLockTile != null && mRotationLockCallback != null) {
             mRotationLockCallback.refreshView(mRotationLockTile, mRotationLockState);
         }
+=======
+        mRotationLockCallback.refreshView(mRotationLockTile, mRotationLockState);
+>>>>>>> android-4.4_r1
     }
 
     void refreshRotationLockTile() {
@@ -1442,6 +1553,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         onBrightnessLevelChanged();
     }
 
+<<<<<<< HEAD
     /**
      * Method checks for if a tile is being used or not
      *
@@ -1528,5 +1640,24 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             }
         }
         return "1".equals(content) || "Y".equalsIgnoreCase(content);
+=======
+    // SSL CA Cert warning.
+    public void addSslCaCertWarningTile(QuickSettingsTileView view, RefreshCallback cb) {
+        mSslCaCertWarningTile = view;
+        mSslCaCertWarningCallback = cb;
+        // Set a sane default while we wait for the AsyncTask to finish (no cert).
+        setSslCaCertWarningTileInfo(false, true);
+    }
+    public void setSslCaCertWarningTileInfo(boolean hasCert, boolean isManaged) {
+        Resources r = mContext.getResources();
+        mSslCaCertWarningState.enabled = hasCert;
+        if (isManaged) {
+            mSslCaCertWarningState.iconId = R.drawable.ic_qs_certificate_info;
+        } else {
+            mSslCaCertWarningState.iconId = android.R.drawable.stat_notify_error;
+        }
+        mSslCaCertWarningState.label = r.getString(R.string.ssl_ca_cert_warning);
+        mSslCaCertWarningCallback.refreshView(mSslCaCertWarningTile, mSslCaCertWarningState);
+>>>>>>> android-4.4_r1
     }
 }

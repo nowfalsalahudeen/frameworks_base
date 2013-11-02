@@ -38,6 +38,7 @@ import android.app.ActivityManagerNative;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.PendingIntent;
+import android.app.admin.DevicePolicyManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -73,6 +74,7 @@ import android.os.Handler;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.provider.AlarmClock;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
 import android.provider.ContactsContract.Profile;
@@ -222,6 +224,8 @@ public class QuickSettings {
 
     private BrightnessController mBrightnessController;
     private BluetoothController mBluetoothController;
+    private RotationLockController mRotationLockController;
+    private LocationController mLocationController;
 
     private Dialog mBrightnessDialog;
     private int mBrightnessDialogShortTimeout;
@@ -299,6 +303,8 @@ public class QuickSettings {
 
     public QuickSettings(Context context, QuickSettingsContainerView container) {
         mDisplayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+        mDevicePolicyManager
+            = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
         mContext = context;
         mContainerView = container;
         mModel = new QuickSettingsModel(context);
@@ -338,6 +344,7 @@ public class QuickSettings {
         filter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         filter.addAction(Intent.ACTION_USER_SWITCHED);
+        filter.addAction(KeyChain.ACTION_STORAGE_CHANGED);
         mContext.registerReceiver(mReceiver, filter);
 
         IntentFilter profileFilter = new IntentFilter();
@@ -367,12 +374,16 @@ public class QuickSettings {
     }
 
     public void setup(NetworkController networkController, BluetoothController bluetoothController,
-            BatteryController batteryController, LocationController locationController) {
+            BatteryController batteryController, LocationController locationController,
+            RotationLockController rotationLockController) {
         mBluetoothController = bluetoothController;
+        mRotationLockController = rotationLockController;
+        mLocationController = locationController;
 
         setupQuickSettings();
         updateWifiDisplayStatus();
         updateResources();
+        applyLocationEnabledStatus();
 
         ArrayList<String> userTiles = getCustomUserTiles();
         if (userTiles.contains(SIGNAL_TOGGLE) || userTiles.contains(WIFI_TOGGLE))
@@ -1178,6 +1189,9 @@ public class QuickSettings {
                         !new File(mFastChargePath).exists()) {
                     // config not set or config set and kernel doesn't support it?
                     break;
+        final QuickSettingsTileView wifiTile = (QuickSettingsTileView)
+                inflater.inflate(R.layout.quick_settings_tile, parent, false);
+        wifiTile.setContent(R.layout.quick_settings_tile_wifi, inflater);
                 }
                 quick = (QuickSettingsTileView)
                         inflater.inflate(R.layout.quick_settings_tile, parent, false);
@@ -1723,6 +1737,35 @@ public class QuickSettings {
                 }
             }
         }
+        // Location
+        final QuickSettingsBasicTile locationTile
+                = new QuickSettingsBasicTile(mContext);
+        locationTile.setImageResource(R.drawable.ic_qs_location_on);
+        locationTile.setTextResource(R.string.quick_settings_location_label);
+        locationTile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startSettingsActivity(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            }
+        });
+        if (LONG_PRESS_TOGGLES) {
+            locationTile.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    boolean newLocationEnabledState = !mLocationController.isLocationEnabled();
+                    if (mLocationController.setLocationEnabled(newLocationEnabledState)
+                            && newLocationEnabledState) {
+                        // If we've successfully switched from location off to on, close the
+                        // notifications tray to show the network location provider consent dialog.
+                        Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+                        mContext.sendBroadcast(closeDialog);
+                    }
+                    return true; // Consume click
+                }} );
+        }
+        mModel.addLocationTile(locationTile,
+                new QuickSettingsModel.BasicRefreshCallback(locationTile));
+        parent.addView(locationTile);
     }
 
     private void addTemporaryTiles(final ViewGroup parent, final LayoutInflater inflater) {
@@ -1759,8 +1802,6 @@ public class QuickSettings {
                 inflater.inflate(R.layout.quick_settings_tile, parent, false);
         wifiDisplayTile.setContent(R.layout.quick_settings_tile_wifi_display, inflater);
         wifiDisplayTile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
                 startSettingsActivity(android.provider.Settings.ACTION_WIFI_DISPLAY_SETTINGS);
             }
         });
@@ -1962,6 +2003,10 @@ public class QuickSettings {
         mModel.onBluetoothStateChange(mBluetoothState);
     }
 
+    private void applyLocationEnabledStatus() {
+        mModel.onLocationSettingsChanged(mLocationController.isLocationEnabled());
+    }
+
     void reloadUserInfo() {
         if (mUserInfoTask != null) {
             mUserInfoTask.cancel(false);
@@ -1969,6 +2014,7 @@ public class QuickSettings {
         }
         if (mTilesSetUp) {
             queryForUserInformation();
+            queryForSslCaCerts();
         }
     }
 

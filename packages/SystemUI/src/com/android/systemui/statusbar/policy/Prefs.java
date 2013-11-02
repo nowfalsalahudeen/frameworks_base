@@ -22,6 +22,7 @@ import android.content.SharedPreferences;
 public class Prefs {
     private static final String SHARED_PREFS_NAME = "status_bar";
 
+<<<<<<< HEAD
     // a boolean
     public static final String DO_NOT_DISTURB_PREF = "do_not_disturb";
     public static final boolean DO_NOT_DISTURB_DEFAULT = false;
@@ -32,6 +33,8 @@ public class Prefs {
 
     public static final String LAST_FCHARGE_STATE = "last_fcharge_state";
 
+=======
+>>>>>>> android-4.4_r1
     public static SharedPreferences read(Context context) {
         return context.getSharedPreferences(Prefs.SHARED_PREFS_NAME, Context.MODE_PRIVATE);
     }

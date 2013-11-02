@@ -30,14 +30,17 @@ import android.os.storage.StorageEventListener;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.Settings;
-import android.util.Slog;
+import android.util.Log;
 
-public class StorageNotification extends StorageEventListener {
+import com.android.systemui.SystemUI;
+
+public class StorageNotification extends SystemUI {
     private static final String TAG = "StorageNotification";
     private static final boolean DEBUG = false;
 
     private static final boolean POP_UMS_ACTIVITY_ON_CONNECT = true;
 
+<<<<<<< HEAD
    /**
     * Binder context for this service
     */
@@ -49,6 +52,14 @@ public class StorageNotification extends StorageEventListener {
     * <p>
     * This is lazily created, so use {@link #setUsbStorageNotification()}.
     */
+=======
+    /**
+     * The notification that is shown when a USB mass storage host
+     * is connected.
+     * <p>
+     * This is lazily created, so use {@link #setUsbStorageNotification()}.
+     */
+>>>>>>> android-4.4_r1
     private Notification mUsbStorageNotification;
 
    /**
@@ -67,18 +78,38 @@ public class StorageNotification extends StorageEventListener {
 
     private Handler        mAsyncEventHandler;
 
-    public StorageNotification(Context context) {
-        mContext = context;
+    private class StorageNotificationEventListener extends StorageEventListener {
+        public void onUsbMassStorageConnectionChanged(final boolean connected) {
+            mAsyncEventHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    onUsbMassStorageConnectionChangedAsync(connected);
+                }
+            });
+        }
+        public void onStorageStateChanged(final String path,
+                final String oldState, final String newState) {
+            mAsyncEventHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    onStorageStateChangedAsync(path, oldState, newState);
+                }
+            });
+        }
+    }
 
-        mStorageManager = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
+    @Override
+    public void start() {
+        mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
         final boolean connected = mStorageManager.isUsbMassStorageConnected();
-        if (DEBUG) Slog.d(TAG, String.format( "Startup with UMS connection %s (media state %s)",
+        if (DEBUG) Log.d(TAG, String.format( "Startup with UMS connection %s (media state %s)",
                 mUmsAvailable, Environment.getExternalStorageState()));
-        
+
         HandlerThread thr = new HandlerThread("SystemUI StorageNotification");
         thr.start();
         mAsyncEventHandler = new Handler(thr.getLooper());
 
+<<<<<<< HEAD
         onUsbMassStorageConnectionChanged(connected);
     }
 
@@ -93,6 +124,11 @@ public class StorageNotification extends StorageEventListener {
                 onUsbMassStorageConnectionChangedAsync(connected);
             }
         });
+=======
+        StorageNotificationEventListener listener = new StorageNotificationEventListener();
+        listener.onUsbMassStorageConnectionChanged(connected);
+        mStorageManager.registerListener(listener);
+>>>>>>> android-4.4_r1
     }
 
     private void onUsbMassStorageConnectionChangedAsync(boolean connected) {
@@ -103,7 +139,7 @@ public class StorageNotification extends StorageEventListener {
          */
         String st = Environment.getExternalStorageState();
 
-        if (DEBUG) Slog.i(TAG, String.format("UMS connection changed to %s (media state %s)",
+        if (DEBUG) Log.i(TAG, String.format("UMS connection changed to %s (media state %s)",
                 connected, st));
 
         if (connected && (st.equals(
@@ -116,6 +152,7 @@ public class StorageNotification extends StorageEventListener {
         updateUsbMassStorageNotification(connected);
     }
 
+<<<<<<< HEAD
    /*
     * @override com.android.os.storage.StorageEventListener
     */
@@ -132,6 +169,10 @@ public class StorageNotification extends StorageEventListener {
     private void onStorageStateChangedAsync(String path, String oldState, String newState) {
         boolean isPrimary = mStorageManager.getPrimaryVolume().getPath().equals(path);
         if (DEBUG) Slog.i(TAG, String.format(
+=======
+    private void onStorageStateChangedAsync(String path, String oldState, String newState) {
+        if (DEBUG) Log.i(TAG, String.format(
+>>>>>>> android-4.4_r1
                 "Media {%s} state changed from {%s} -> {%s}", path, oldState, newState));
         if (newState.equals(Environment.MEDIA_SHARED)) {
            /*
@@ -229,9 +270,15 @@ public class StorageNotification extends StorageEventListener {
             PendingIntent pi = PendingIntent.getActivity(mContext, 0, intent, 0);
 
             setMediaStorageNotification(
+<<<<<<< HEAD
                 com.android.internal.R.string.ext_media_unmountable_notification_title,
                 com.android.internal.R.string.ext_media_unmountable_notification_message,
                 com.android.internal.R.drawable.stat_notify_sdcard_usb, true, false, pi);
+=======
+                    com.android.internal.R.string.ext_media_unmountable_notification_title,
+                    com.android.internal.R.string.ext_media_unmountable_notification_message,
+                    com.android.internal.R.drawable.stat_notify_sdcard_usb, true, false, pi);
+>>>>>>> android-4.4_r1
             updateUsbMassStorageNotification(mUmsAvailable);
         } else if (newState.equals(Environment.MEDIA_REMOVED)) {
             /*
@@ -256,7 +303,7 @@ public class StorageNotification extends StorageEventListener {
                     true, true, null);
             updateUsbMassStorageNotification(isPrimary ? false : mUmsAvailable);
         } else {
-            Slog.w(TAG, String.format("Ignoring unknown state {%s}", newState));
+            Log.w(TAG, String.format("Ignoring unknown state {%s}", newState));
         }
     }
 

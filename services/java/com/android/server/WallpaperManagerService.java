@@ -219,6 +219,8 @@ class WallpaperManagerService extends IWallpaperManager.Stub {
         WallpaperData mWallpaper;
         IRemoteCallback mReply;
 
+        boolean mDimensionsChanged = false;
+
         public WallpaperConnection(WallpaperInfo info, WallpaperData wallpaper) {
             mInfo = info;
             mWallpaper = wallpaper;
@@ -266,6 +268,14 @@ class WallpaperManagerService extends IWallpaperManager.Stub {
         public void attachEngine(IWallpaperEngine engine) {
             synchronized (mLock) {
                 mEngine = engine;
+                if (mDimensionsChanged) {
+                    try {
+                        mEngine.setDesiredSize(mWallpaper.width, mWallpaper.height);
+                    } catch (RemoteException e) {
+                        Slog.w(TAG, "Failed to set wallpaper dimensions", e);
+                    }
+                    mDimensionsChanged = false;
+                }
             }
         }
 
@@ -453,7 +463,7 @@ class WallpaperManagerService extends IWallpaperManager.Stub {
         }
     }
 
-    public void systemReady() {
+    public void systemRunning() {
         if (DEBUG) Slog.v(TAG, "systemReady");
         WallpaperData wallpaper = mWallpaperMap.get(UserHandle.USER_OWNER);
         switchWallpaper(wallpaper, null);
@@ -662,6 +672,11 @@ class WallpaperManagerService extends IWallpaperManager.Stub {
                         } catch (RemoteException e) {
                         }
                         notifyCallbacksLocked(wallpaper);
+                    } else if (wallpaper.connection.mService != null) {
+                        // We've attached to the service but the engine hasn't attached back to us
+                        // yet. This means it will be created with the previous dimensions, so we
+                        // need to update it to the new dimensions once it attaches.
+                        wallpaper.connection.mDimensionsChanged = true;
                     }
                 }
             }
@@ -831,6 +846,11 @@ class WallpaperManagerService extends IWallpaperManager.Stub {
             int serviceUserId = wallpaper.userId;
             ServiceInfo si = mIPackageManager.getServiceInfo(componentName,
                     PackageManager.GET_META_DATA | PackageManager.GET_PERMISSIONS, serviceUserId);
+            if (si == null) {
+                // The wallpaper component we're trying to use doesn't exist
+                Slog.w(TAG, "Attempted wallpaper " + componentName + " is unavailable");
+                return false;
+            }
             if (!android.Manifest.permission.BIND_WALLPAPER.equals(si.permission)) {
                 String msg = "Selected service does not require "
                         + android.Manifest.permission.BIND_WALLPAPER
@@ -895,7 +915,8 @@ class WallpaperManagerService extends IWallpaperManager.Stub {
                     Intent.createChooser(new Intent(Intent.ACTION_SET_WALLPAPER),
                             mContext.getText(com.android.internal.R.string.chooser_wallpaper)),
                     0, null, new UserHandle(serviceUserId)));
-            if (!mContext.bindServiceAsUser(intent, newConn, Context.BIND_AUTO_CREATE,
+            if (!mContext.bindServiceAsUser(intent, newConn,
+                    Context.BIND_AUTO_CREATE | Context.BIND_SHOWING_UI,
                     new UserHandle(serviceUserId))) {
                 String msg = "Unable to bind service: "
                         + componentName;

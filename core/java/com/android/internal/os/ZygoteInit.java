@@ -22,9 +22,11 @@ import static libcore.io.OsConstants.S_IRWXO;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.net.LocalServerSocket;
+import android.opengl.EGL14;
 import android.os.Debug;
 import android.os.Process;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.Trace;
 import android.util.EventLog;
 import android.util.Log;
@@ -58,8 +60,9 @@ import java.util.ArrayList;
  * @hide
  */
 public class ZygoteInit {
-
     private static final String TAG = "Zygote";
+
+    private static final String PROPERTY_DISABLE_OPENGL_PRELOADING = "ro.zygote.disable_gl_preload";
 
     private static final String ANDROID_SOCKET_ENV = "ANDROID_SOCKET_zygote";
 
@@ -226,6 +229,13 @@ public class ZygoteInit {
     static void preload() {
         preloadClasses();
         preloadResources();
+        preloadOpenGL();
+    }
+
+    private static void preloadOpenGL() {
+        if (!SystemProperties.getBoolean(PROPERTY_DISABLE_OPENGL_PRELOADING, false)) {
+            EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
+        }
     }
 
     /**
@@ -310,6 +320,9 @@ public class ZygoteInit {
                 IoUtils.closeQuietly(is);
                 // Restore default.
                 runtime.setTargetHeapUtilization(defaultUtilization);
+
+                // Fill in dex caches with classes, fields, and methods brought in by preloading.
+                runtime.preloadDexCaches();
 
                 Debug.stopAllocCounting();
 
@@ -474,11 +487,23 @@ public class ZygoteInit {
      */
     private static boolean startSystemServer()
             throws MethodAndArgsCaller, RuntimeException {
+        long capabilities = posixCapabilitiesAsBits(
+            OsConstants.CAP_KILL,
+            OsConstants.CAP_NET_ADMIN,
+            OsConstants.CAP_NET_BIND_SERVICE,
+            OsConstants.CAP_NET_BROADCAST,
+            OsConstants.CAP_NET_RAW,
+            OsConstants.CAP_SYS_MODULE,
+            OsConstants.CAP_SYS_NICE,
+            OsConstants.CAP_SYS_RESOURCE,
+            OsConstants.CAP_SYS_TIME,
+            OsConstants.CAP_SYS_TTY_CONFIG
+        );
         /* Hardcoded command line to start the system server */
         String args[] = {
             "--setuid=1000",
             "--setgid=1000",
-            "--setgroups=1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1018,1021,3001,3002,3003,3004,3006,3007,3009",
+            "--setgroups=1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1018,1021,1032,3001,3002,3003,3004,3006,3007,3009",
             "--capabilities=130104352,130104352",
             "--runtime-init",
             "--nice-name=system_server",

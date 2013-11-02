@@ -35,6 +35,7 @@ import android.util.FloatMath;
 import android.util.Slog;
 import android.view.Display;
 import android.view.DisplayInfo;
+import android.view.Surface.OutOfResourcesException;
 import android.view.Surface;
 import android.view.SurfaceControl;
 import android.view.SurfaceSession;
@@ -96,7 +97,7 @@ final class ElectronBeam {
     // Texture names.  We only use one texture, which contains the screenshot.
     private final int[] mTexNames = new int[1];
     private boolean mTexNamesGenerated;
-    private float mTexMatrix[] = new float[16];
+    private final float mTexMatrix[] = new float[16];
 
     // Vertex and corresponding texture coordinates.
     // We have 4 2D vertices, so 8 elements.  The vertices form a quad.
@@ -332,10 +333,10 @@ final class ElectronBeam {
 
     /**
      * Draws a frame where the electron beam has been stretched out into
-     * a thin white horizontal line that fades as it expands outwards.
+     * a thin white horizontal line that fades as it collapses inwards.
      *
-     * @param stretch The stretch factor.  0.0 is no stretch / no fade,
-     * 1.0 is maximum stretch / maximum fade.
+     * @param stretch The stretch factor.  0.0 is maximum stretch / no fade,
+     * 1.0 is collapsed / maximum fade.
      */
     private void drawHStretch(float stretch) {
         // compute interpolation scale factor
@@ -351,7 +352,7 @@ final class ElectronBeam {
 
             // draw narrow fading white line
             setHStretchQuad(mVertexBuffer, mDisplayWidth, mDisplayHeight, ag);
-            GLES10.glColor4f(1.0f - ag, 1.0f - ag, 1.0f - ag, 1.0f);
+            GLES10.glColor4f(1.0f - ag*0.75f, 1.0f - ag*0.75f, 1.0f - ag*0.75f, 1.0f);
             GLES10.glDrawArrays(GLES10.GL_TRIANGLE_FAN, 0, 4);
 
             // clean up
@@ -374,6 +375,7 @@ final class ElectronBeam {
         setQuad(vtx, x, y, w, h);
     }
 
+<<<<<<< HEAD
     private void setHStretchQuad(FloatBuffer vtx, float dw, float dh, float a) {
         final float w;
         final float h;
@@ -384,6 +386,11 @@ final class ElectronBeam {
             w = dw + (dw * a);
             h = 1.0f;
         }
+=======
+    private static void setHStretchQuad(FloatBuffer vtx, float dw, float dh, float a) {
+        final float w = 2 * dw * (1.0f - a);
+        final float h = 1.0f;
+>>>>>>> android-4.4_r1
         final float x = (dw - w) * 0.5f;
         final float y = (dh - h) * 0.5f;
         setQuad(vtx, x, y, w, h);
@@ -542,7 +549,7 @@ final class ElectronBeam {
                     mSurfaceControl = new SurfaceControl(mSurfaceSession,
                             "ElectronBeam", mDisplayWidth, mDisplayHeight,
                             PixelFormat.OPAQUE, flags);
-                } catch (SurfaceControl.OutOfResourcesException ex) {
+                } catch (OutOfResourcesException ex) {
                     Slog.e(TAG, "Unable to create surface.", ex);
                     return false;
                 }
@@ -552,7 +559,7 @@ final class ElectronBeam {
             mSurfaceControl.setSize(mDisplayWidth, mDisplayHeight);
             mSurface = new Surface();
             mSurface.copyFrom(mSurfaceControl);
-            
+
             mSurfaceLayout = new NaturalSurfaceLayout(mDisplayManager, mSurfaceControl);
             mSurfaceLayout.onDisplayTransaction();
         } finally {

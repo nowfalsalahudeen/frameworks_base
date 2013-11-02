@@ -19,13 +19,15 @@
     android:layout_height="wrap_content"
     android:layout_gravity="center"
     android:orientation="vertical">
-    <ImageView
-        android:id="@+id/battery_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:paddingBottom="10dp"
-        />
+    <com.android.systemui.BatteryMeterView
+            android:id="@+id/image"
+            android:layout_marginTop="@dimen/qs_tile_margin_above_icon"
+            android:layout_marginBottom="@dimen/qs_tile_margin_below_icon"
+            android:layout_width="22dp"
+            android:layout_height="32dp"
+            android:padding="3dp"
+            android:layout_gravity="top|center_horizontal"
+            />
     <TextView
         style="@style/TextAppearance.QuickSettings.TileView"
         android:id="@+id/battery_textview"

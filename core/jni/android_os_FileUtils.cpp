@@ -150,7 +150,6 @@ jint android_os_FileUtils_getFatVolumeId(JNIEnv* env, jobject clazz, jstring pat
 }
 
 static const JNINativeMethod methods[] = {
-    {"setPermissions",  "(Ljava/lang/String;III)I", (void*)android_os_FileUtils_setPermissions},
     {"getVolumeUUID",  "(Ljava/lang/String;)I", (void*)android_os_FileUtils_getVolumeUUID},
     {"getFatVolumeId",  "(Ljava/lang/String;)I", (void*)android_os_FileUtils_getFatVolumeId},
 };

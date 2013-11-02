@@ -31,9 +31,12 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+<<<<<<< HEAD
 import android.hardware.SystemSensorManager;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
+=======
+>>>>>>> android-4.4_r1
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -126,7 +129,7 @@ final class DisplayPowerController {
 
     // Proximity sensor debounce delay in milliseconds for positive or negative transitions.
     private static final int PROXIMITY_SENSOR_POSITIVE_DEBOUNCE_DELAY = 0;
-    private static final int PROXIMITY_SENSOR_NEGATIVE_DEBOUNCE_DELAY = 500;
+    private static final int PROXIMITY_SENSOR_NEGATIVE_DEBOUNCE_DELAY = 250;
 
     // Trigger proximity if distance is less than 5 cm.
     private static final float TYPICAL_PROXIMITY_THRESHOLD = 5.0f;
@@ -176,6 +179,10 @@ final class DisplayPowerController {
 
     // Notifier for sending asynchronous notifications.
     private final Notifier mNotifier;
+
+    // The display suspend blocker.
+    // Held while there are pending state change notifications.
+    private final SuspendBlocker mDisplaySuspendBlocker;
 
     // The display blanker.
     private final DisplayBlanker mDisplayBlanker;
@@ -291,7 +298,7 @@ final class DisplayPowerController {
 
     // The raw non-debounced proximity sensor state.
     private int mPendingProximity = PROXIMITY_UNKNOWN;
-    private long mPendingProximityDebounceTime;
+    private long mPendingProximityDebounceTime = -1; // -1 if fully debounced
 
     // True if the screen was turned off because of the proximity sensor.
     // When the screen turns on again, we report user activity to the power manager.
@@ -367,11 +374,12 @@ final class DisplayPowerController {
     public DisplayPowerController(Looper looper, Context context, Notifier notifier,
             LightsService lights, TwilightService twilight, SensorManager sensorManager,
             DisplayManagerService displayManager,
-            DisplayBlanker displayBlanker,
+            SuspendBlocker displaySuspendBlocker, DisplayBlanker displayBlanker,
             Callbacks callbacks, Handler callbackHandler) {
         mContext = context;
         mHandler = new DisplayControllerHandler(looper);
         mNotifier = notifier;
+        mDisplaySuspendBlocker = displaySuspendBlocker;
         mDisplayBlanker = displayBlanker;
         mCallbacks = callbacks;
         mCallbackHandler = callbackHandler;
@@ -702,7 +710,7 @@ final class DisplayPowerController {
                 if (!mScreenOffBecauseOfProximity
                         && mProximity == PROXIMITY_POSITIVE) {
                     mScreenOffBecauseOfProximity = true;
-                    sendOnProximityPositive();
+                    sendOnProximityPositiveWithWakelock();
                     setScreenOn(false);
                 }
             } else if (mWaitingForNegativeProximity
@@ -717,7 +725,7 @@ final class DisplayPowerController {
             if (mScreenOffBecauseOfProximity
                     && mProximity != PROXIMITY_POSITIVE) {
                 mScreenOffBecauseOfProximity = false;
-                sendOnProximityNegative();
+                sendOnProximityNegativeWithWakelock();
             }
         } else {
             mWaitingForNegativeProximity = false;
@@ -838,7 +846,7 @@ final class DisplayPowerController {
                     }
                 }
             }
-            sendOnStateChanged();
+            sendOnStateChangedWithWakelock();
         }
     }
 
@@ -913,54 +921,86 @@ final class DisplayPowerController {
     private void setProximitySensorEnabled(boolean enable) {
         if (enable) {
             if (!mProximitySensorEnabled) {
+                // Register the listener.
+                // Proximity sensor state already cleared initially.
                 mProximitySensorEnabled = true;
-                mPendingProximity = PROXIMITY_UNKNOWN;
                 mSensorManager.registerListener(mProximitySensorListener, mProximitySensor,
                         SensorManager.SENSOR_DELAY_NORMAL, mHandler);
             }
         } else {
             if (mProximitySensorEnabled) {
+                // Unregister the listener.
+                // Clear the proximity sensor state for next time.
                 mProximitySensorEnabled = false;
                 mProximity = PROXIMITY_UNKNOWN;
+                mPendingProximity = PROXIMITY_UNKNOWN;
                 mHandler.removeMessages(MSG_PROXIMITY_SENSOR_DEBOUNCED);
                 mSensorManager.unregisterListener(mProximitySensorListener);
+                clearPendingProximityDebounceTime(); // release wake lock (must be last)
             }
         }
     }
 
     private void handleProximitySensorEvent(long time, boolean positive) {
-        if (mPendingProximity == PROXIMITY_NEGATIVE && !positive) {
-            return; // no change
-        }
-        if (mPendingProximity == PROXIMITY_POSITIVE && positive) {
-            return; // no change
-        }
+        if (mProximitySensorEnabled) {
+            if (mPendingProximity == PROXIMITY_NEGATIVE && !positive) {
+                return; // no change
+            }
+            if (mPendingProximity == PROXIMITY_POSITIVE && positive) {
+                return; // no change
+            }
 
-        // Only accept a proximity sensor reading if it remains
-        // stable for the entire debounce delay.
-        mHandler.removeMessages(MSG_PROXIMITY_SENSOR_DEBOUNCED);
-        if (positive) {
-            mPendingProximity = PROXIMITY_POSITIVE;
-            mPendingProximityDebounceTime = time + PROXIMITY_SENSOR_POSITIVE_DEBOUNCE_DELAY;
-        } else {
-            mPendingProximity = PROXIMITY_NEGATIVE;
-            mPendingProximityDebounceTime = time + PROXIMITY_SENSOR_NEGATIVE_DEBOUNCE_DELAY;
+            // Only accept a proximity sensor reading if it remains
+            // stable for the entire debounce delay.  We hold a wake lock while
+            // debouncing the sensor.
+            mHandler.removeMessages(MSG_PROXIMITY_SENSOR_DEBOUNCED);
+            if (positive) {
+                mPendingProximity = PROXIMITY_POSITIVE;
+                setPendingProximityDebounceTime(
+                        time + PROXIMITY_SENSOR_POSITIVE_DEBOUNCE_DELAY); // acquire wake lock
+            } else {
+                mPendingProximity = PROXIMITY_NEGATIVE;
+                setPendingProximityDebounceTime(
+                        time + PROXIMITY_SENSOR_NEGATIVE_DEBOUNCE_DELAY); // acquire wake lock
+            }
+
+            // Debounce the new sensor reading.
+            debounceProximitySensor();
         }
-        debounceProximitySensor();
     }
 
     private void debounceProximitySensor() {
-        if (mPendingProximity != PROXIMITY_UNKNOWN) {
+        if (mProximitySensorEnabled
+                && mPendingProximity != PROXIMITY_UNKNOWN
+                && mPendingProximityDebounceTime >= 0) {
             final long now = SystemClock.uptimeMillis();
             if (mPendingProximityDebounceTime <= now) {
+                // Sensor reading accepted.  Apply the change then release the wake lock.
                 mProximity = mPendingProximity;
-                sendUpdatePowerState();
+                updatePowerState();
+                clearPendingProximityDebounceTime(); // release wake lock (must be last)
             } else {
+                // Need to wait a little longer.
+                // Debounce again later.  We continue holding a wake lock while waiting.
                 Message msg = mHandler.obtainMessage(MSG_PROXIMITY_SENSOR_DEBOUNCED);
                 msg.setAsynchronous(true);
                 mHandler.sendMessageAtTime(msg, mPendingProximityDebounceTime);
             }
         }
+    }
+
+    private void clearPendingProximityDebounceTime() {
+        if (mPendingProximityDebounceTime >= 0) {
+            mPendingProximityDebounceTime = -1;
+            mDisplaySuspendBlocker.release(); // release wake lock
+        }
+    }
+
+    private void setPendingProximityDebounceTime(long debounceTime) {
+        if (mPendingProximityDebounceTime < 0) {
+            mDisplaySuspendBlocker.acquire(); // acquire wake lock
+        }
+        mPendingProximityDebounceTime = debounceTime;
     }
 
     private void setLightSensorEnabled(boolean enable, boolean updateAutoBrightness) {
@@ -1256,7 +1296,8 @@ final class DisplayPowerController {
         return x + (y - x) * alpha;
     }
 
-    private void sendOnStateChanged() {
+    private void sendOnStateChangedWithWakelock() {
+        mDisplaySuspendBlocker.acquire();
         mCallbackHandler.post(mOnStateChangedRunnable);
     }
 
@@ -1264,10 +1305,12 @@ final class DisplayPowerController {
         @Override
         public void run() {
             mCallbacks.onStateChanged();
+            mDisplaySuspendBlocker.release();
         }
     };
 
-    private void sendOnProximityPositive() {
+    private void sendOnProximityPositiveWithWakelock() {
+        mDisplaySuspendBlocker.acquire();
         mCallbackHandler.post(mOnProximityPositiveRunnable);
     }
 
@@ -1275,10 +1318,12 @@ final class DisplayPowerController {
         @Override
         public void run() {
             mCallbacks.onProximityPositive();
+            mDisplaySuspendBlocker.release();
         }
     };
 
-    private void sendOnProximityNegative() {
+    private void sendOnProximityNegativeWithWakelock() {
+        mDisplaySuspendBlocker.acquire();
         mCallbackHandler.post(mOnProximityNegativeRunnable);
     }
 
@@ -1286,6 +1331,7 @@ final class DisplayPowerController {
         @Override
         public void run() {
             mCallbacks.onProximityNegative();
+            mDisplaySuspendBlocker.release();
         }
     };
 

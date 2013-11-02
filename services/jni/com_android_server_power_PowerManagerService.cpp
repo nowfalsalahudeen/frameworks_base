@@ -26,13 +26,13 @@
 #include <limits.h>
 
 #include <android_runtime/AndroidRuntime.h>
+#include <android_runtime/Log.h>
 #include <utils/Timers.h>
 #include <utils/misc.h>
 #include <utils/String8.h>
 #include <utils/Log.h>
 #include <hardware/power.h>
 #include <hardware_legacy/power.h>
-#include <cutils/android_reboot.h>
 #include <suspend/autosuspend.h>
 
 #include "com_android_server_power_PowerManagerService.h"
@@ -189,6 +189,7 @@ static void nativeSetAutoSuspend(JNIEnv *env, jclass clazz, jboolean enable) {
     }
 }
 
+<<<<<<< HEAD
 static void nativeShutdown(JNIEnv *env, jclass clazz) {
     android_reboot(ANDROID_RB_POWEROFF, 0, 0);
 }
@@ -212,6 +213,8 @@ void nativeCpuBoost(JNIEnv *env, jobject clazz, jint duration) {
 }
 
 
+=======
+>>>>>>> android-4.4_r1
 // ----------------------------------------------------------------------------
 
 static JNINativeMethod gPowerManagerServiceMethods[] = {
@@ -228,12 +231,15 @@ static JNINativeMethod gPowerManagerServiceMethods[] = {
             (void*) nativeSetInteractive },
     { "nativeSetAutoSuspend", "(Z)V",
             (void*) nativeSetAutoSuspend },
+<<<<<<< HEAD
     { "nativeShutdown", "()V",
             (void*) nativeShutdown },
     { "nativeReboot", "(Ljava/lang/String;)V",
             (void*) nativeReboot },
     { "nativeCpuBoost", "(I)V",
             (void*) nativeCpuBoost },
+=======
+>>>>>>> android-4.4_r1
 };
 
 #define FIND_CLASS(var, className) \

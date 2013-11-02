@@ -16,17 +16,23 @@
 
 package com.android.systemui.statusbar.policy;
 
+import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.TypedArray;
+<<<<<<< HEAD
 import android.database.ContentObserver;
 import android.graphics.drawable.Drawable;
+=======
+>>>>>>> android-4.4_r1
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.hardware.input.InputManager;
+<<<<<<< HEAD
 import android.os.Handler;
 import android.os.RemoteException;
 import android.os.SystemClock;
@@ -35,6 +41,11 @@ import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
+=======
+import android.os.SystemClock;
+import android.util.AttributeSet;
+import android.util.Log;
+>>>>>>> android-4.4_r1
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
@@ -43,6 +54,7 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.ImageView;
 
 import com.android.systemui.R;
@@ -51,8 +63,10 @@ import java.util.ArrayList;
 
 public class KeyButtonView extends ImageView {
     private static final String TAG = "StatusBar.KeyButtonView";
+    private static final boolean DEBUG = false;
 
     final float GLOW_MAX_SCALE_FACTOR = 1.8f;
+<<<<<<< HEAD
     static float BUTTON_QUIESCENT_ALPHA = 0.70f;
 
     private long mDownTime;
@@ -74,14 +88,34 @@ public class KeyButtonView extends ImageView {
 
     private boolean mAttached = false;
     private GlobalSettingsObserver mSettingsObserver;
+=======
+    public static final float DEFAULT_QUIESCENT_ALPHA = 0.70f;
+
+    long mDownTime;
+    int mCode;
+    int mTouchSlop;
+    Drawable mGlowBG;
+    int mGlowWidth, mGlowHeight;
+    float mGlowAlpha = 0f, mGlowScale = 1f, mDrawingAlpha = 1f;
+    float mQuiescentAlpha = DEFAULT_QUIESCENT_ALPHA;
+    boolean mSupportsLongpress = true;
+    RectF mRect = new RectF(0f,0f,0f,0f);
+    AnimatorSet mPressedAnim;
+    Animator mAnimateToQuiescent = new ObjectAnimator();
+>>>>>>> android-4.4_r1
 
     Runnable mCheckLongPress = new Runnable() {
         public void run() {
             if (isPressed()) {
+<<<<<<< HEAD
                 setHandlingLongpress(true);
                 if (!performLongClick() && (mCode != 0)) {
                     // we tried to do custom long click and failed
                     // do long click on primary 'key'
+=======
+                // Log.d("KeyButtonView", "longpressed: " + this);
+                if (mCode != 0) {
+>>>>>>> android-4.4_r1
                     sendEvent(KeyEvent.ACTION_DOWN, KeyEvent.FLAG_LONG_PRESS);
                     sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                     if (mCode == KeyEvent.KEYCODE_DPAD_LEFT || mCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
@@ -118,6 +152,7 @@ public class KeyButtonView extends ImageView {
             a = context.obtainStyledAttributes(attrs, R.styleable.KeyButtonView,
                 defStyle, 0);
 
+<<<<<<< HEAD
             mCode = a.getInteger(R.styleable.KeyButtonView_keyCode, 0);
 
             mSupportsLongpress = a.getBoolean(R.styleable.KeyButtonView_keyRepeat, true);
@@ -137,6 +172,11 @@ public class KeyButtonView extends ImageView {
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         mSettingsObserver = GlobalSettingsObserver.getInstance(context);
     }
+=======
+        mCode = a.getInteger(R.styleable.KeyButtonView_keyCode, 0);
+
+        mSupportsLongpress = a.getBoolean(R.styleable.KeyButtonView_keyRepeat, true);
+>>>>>>> android-4.4_r1
 
     @Override
     protected void onAttachedToWindow() {
@@ -176,12 +216,18 @@ public class KeyButtonView extends ImageView {
     public void setGlowBackground(int id) {
         mGlowBG = getResources().getDrawable(id);
         if (mGlowBG != null) {
-            setDrawingAlpha(BUTTON_QUIESCENT_ALPHA);
+            setDrawingAlpha(mQuiescentAlpha);
             mGlowWidth = mGlowBG.getIntrinsicWidth();
             mGlowHeight = mGlowBG.getIntrinsicHeight();
+<<<<<<< HEAD
             ContentResolver resolver = mContext.getContentResolver();
             mGlowBGColor = Settings.System.getInt(resolver,
                     Settings.System.NAVIGATION_BAR_GLOW_TINT, -1);
+=======
+        }
+
+        a.recycle();
+>>>>>>> android-4.4_r1
 
             mGlowBG.setColorFilter(null);
             if (mGlowBGColor != -1) {
@@ -209,6 +255,26 @@ public class KeyButtonView extends ImageView {
             mRect.bottom = h;
         }
         super.onDraw(canvas);
+    }
+
+    public void setQuiescentAlpha(float alpha, boolean animate) {
+        mAnimateToQuiescent.cancel();
+        alpha = Math.min(Math.max(alpha, 0), 1);
+        if (alpha == mQuiescentAlpha) return;
+        mQuiescentAlpha = alpha;
+        if (DEBUG) Log.d(TAG, "New quiescent alpha = " + mQuiescentAlpha);
+        if (mGlowBG != null) {
+            if (animate) {
+                mAnimateToQuiescent = animateToQuiescent();
+                mAnimateToQuiescent.start();
+            } else {
+                setDrawingAlpha(mQuiescentAlpha);
+            }
+        }
+    }
+
+    private ObjectAnimator animateToQuiescent() {
+        return ObjectAnimator.ofFloat(this, "drawingAlpha", mQuiescentAlpha);
     }
 
     public float getDrawingAlpha() {
@@ -303,10 +369,17 @@ public class KeyButtonView extends ImageView {
                 }
                 final AnimatorSet as = mPressedAnim = new AnimatorSet();
                 if (pressed) {
+<<<<<<< HEAD
                     if (mGlowScale < mCustomGlowScale)
                         mGlowScale = mCustomGlowScale;
                     if (mGlowAlpha < BUTTON_QUIESCENT_ALPHA)
                         mGlowAlpha = BUTTON_QUIESCENT_ALPHA;
+=======
+                    if (mGlowScale < GLOW_MAX_SCALE_FACTOR)
+                        mGlowScale = GLOW_MAX_SCALE_FACTOR;
+                    if (mGlowAlpha < mQuiescentAlpha)
+                        mGlowAlpha = mQuiescentAlpha;
+>>>>>>> android-4.4_r1
                     setDrawingAlpha(1f);
                     as.playTogether(
                         ObjectAnimator.ofFloat(this, "glowAlpha", 1f),
@@ -314,10 +387,12 @@ public class KeyButtonView extends ImageView {
                     );
                     as.setDuration(mDurationSpeedOff);
                 } else {
+                    mAnimateToQuiescent.cancel();
+                    mAnimateToQuiescent = animateToQuiescent();
                     as.playTogether(
                         ObjectAnimator.ofFloat(this, "glowAlpha", 0f),
                         ObjectAnimator.ofFloat(this, "glowScale", 1f),
-                        ObjectAnimator.ofFloat(this, "drawingAlpha", BUTTON_QUIESCENT_ALPHA)
+                        mAnimateToQuiescent
                     );
                     as.setDuration(mDurationSpeedOn);
                 }
@@ -333,8 +408,12 @@ public class KeyButtonView extends ImageView {
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
+<<<<<<< HEAD
                 //Slog.d("KeyButtonView", "press");
                 setHandlingLongpress(false);
+=======
+                //Log.d("KeyButtonView", "press");
+>>>>>>> android-4.4_r1
                 mDownTime = SystemClock.uptimeMillis();
                 setPressed(true);
                 if (mCode != 0) {

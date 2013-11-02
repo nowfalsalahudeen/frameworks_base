@@ -17,7 +17,6 @@
 package com.android.systemui.statusbar.phone;
 
 import android.app.ActivityManager;
-import android.app.StatusBarManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
@@ -27,7 +26,7 @@ import android.graphics.drawable.Drawable;
 import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.EventLog;
-import android.util.Slog;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
@@ -52,7 +51,7 @@ public class PhoneStatusBarView extends PanelBar {
     PanelView mLastFullyOpenedPanel = null;
     PanelView mNotificationPanel, mSettingsPanel;
     private boolean mShouldFade;
-    private VanirAwesome mVanirAwesome;
+    private final PhoneStatusBarTransitions mBarTransitions;
 
     public PhoneStatusBarView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -65,12 +64,11 @@ public class PhoneStatusBarView extends PanelBar {
         } catch (NotFoundException ex) {
             mSettingsPanelDragzoneFrac = 0f;
         }
+        mBarTransitions = new PhoneStatusBarTransitions(this);
+    }
 
-        mFullWidthNotifications = (mSettingsPanelDragzoneFrac <= 0f) || Settings.System.getInt(mContext.getContentResolver(), Settings.System.TABLET_STATUSBAR, 0) == 0;
-        Drawable bg = mContext.getResources().getDrawable(R.drawable.status_bar_background);
-        if(bg instanceof ColorDrawable) {
-            setBackground(new BackgroundAlphaColorDrawable(((ColorDrawable) bg).getColor()));
-        }
+    public BarTransitions getBarTransitions() {
+        return mBarTransitions;
     }
 
     public void setBar(PhoneStatusBar bar) {
@@ -86,6 +84,7 @@ public class PhoneStatusBarView extends PanelBar {
         for (PanelView pv : mPanels) {
             pv.setRubberbandingEnabled(!mFullWidthNotifications);
         }
+        mBarTransitions.init();
     }
 
     @Override
@@ -107,7 +106,7 @@ public class PhoneStatusBarView extends PanelBar {
 
     @Override
     public boolean panelsEnabled() {
-        return ((mBar.mDisabled & StatusBarManager.DISABLE_EXPAND) == 0);
+        return mBar.panelsEnabled();
     }
 
     @Override
@@ -146,7 +145,7 @@ public class PhoneStatusBarView extends PanelBar {
         float region = (w * mSettingsPanelDragzoneFrac);
 
         if (DEBUG) {
-            Slog.v(TAG, String.format(
+            Log.v(TAG, String.format(
                 "w=%.1f frac=%.3f region=%.1f min=%.1f x=%.1f w-x=%.1f",
                 w, mSettingsPanelDragzoneFrac, region, mSettingsPanelDragzoneMin, x, (w-x)));
         }
@@ -160,7 +159,7 @@ public class PhoneStatusBarView extends PanelBar {
     @Override
     public void onPanelPeeked() {
         super.onPanelPeeked();
-        mBar.makeExpandedVisible(true);
+        mBar.makeExpandedVisible();
     }
 
     @Override
@@ -170,7 +169,7 @@ public class PhoneStatusBarView extends PanelBar {
         // which is kind of tricky to determine
         mShouldFade = (mFadingPanel == null || mFadingPanel.isFullyExpanded());
         if (DEBUG) {
-            Slog.v(TAG, "start opening: " + panel + " shouldfade=" + mShouldFade);
+            Log.v(TAG, "start opening: " + panel + " shouldfade=" + mShouldFade);
         }
         mFadingPanel = panel;
     }
@@ -221,7 +220,7 @@ public class PhoneStatusBarView extends PanelBar {
         super.panelExpansionChanged(panel, frac);
 
         if (DEBUG) {
-            Slog.v(TAG, "panelExpansionChanged: f=" + frac);
+            Log.v(TAG, "panelExpansionChanged: f=" + frac);
         }
 
         if (panel == mFadingPanel && mScrimColor != 0 && ActivityManager.isHighEndGfx()) {
@@ -255,9 +254,11 @@ public class PhoneStatusBarView extends PanelBar {
             panel.setAlpha(alpha);
         }
         updateBackgroundAlpha(frac);
+
+        mBar.animateHeadsUp(mNotificationPanel == panel, mPanelExpandedFractionSum);
+
         mBar.updateCarrierLabelVisibility(false);
     }
-
     private void updateBackgroundAlpha(float ex) {
         if(mFadingPanel != null || ex > 0) {
             mBar.mTransparencyManager.setTempDisableStatusbarState(true);

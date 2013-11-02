@@ -16,9 +16,6 @@
 
 package com.android.systemui.statusbar.policy;
 
-import java.util.ArrayList;
-
-import android.bluetooth.BluetoothAdapter.BluetoothStateChangeCallback;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -26,6 +23,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
 import android.os.BatteryManager;
+<<<<<<< HEAD
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.Slog;
@@ -33,12 +31,15 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
 import android.widget.TextView;
+=======
+>>>>>>> android-4.4_r1
 
-import com.android.systemui.R;
+import java.util.ArrayList;
 
     public class BatteryController extends BroadcastReceiver {
     private static final String TAG = "StatusBar.BatteryController";
 
+<<<<<<< HEAD
     private static Context mContext;
     private static ArrayList<ImageView> mIconViews = new ArrayList<ImageView>();
     private static ArrayList<TextView> mLabelViews = new ArrayList<TextView>();
@@ -90,6 +91,8 @@ import com.android.systemui.R;
             updateSettings();
         }
     }
+=======
+>>>>>>> android-4.4_r1
 
     private static ArrayList<BatteryStateChangeCallback> mChangeCallbacks =
             new ArrayList<BatteryStateChangeCallback>();
@@ -99,6 +102,7 @@ import com.android.systemui.R;
     }
 
     public BatteryController(Context context) {
+<<<<<<< HEAD
         mContext = context;
         mHandler = new Handler();
 
@@ -122,6 +126,14 @@ import com.android.systemui.R;
     }
 
     public static void addStateChangedCallback(BatteryStateChangeCallback cb) {		
+=======
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        context.registerReceiver(this, filter);
+    }
+
+    public void addStateChangedCallback(BatteryStateChangeCallback cb) {
+>>>>>>> android-4.4_r1
         mChangeCallbacks.add(cb);
     }
 
@@ -131,6 +143,7 @@ import com.android.systemui.R;
         final String action = intent.getAction();
         if (action.equals(Intent.ACTION_BATTERY_CHANGED)) {
             final int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+<<<<<<< HEAD
             mBatteryPlugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0;
 
             int N = mIconViews.size();
@@ -147,6 +160,19 @@ import com.android.systemui.R;
                 v.setText(mContext.getString(BATTERY_TEXT_STYLE_MIN,
                         level));
             }
+=======
+            final int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS,
+                    BatteryManager.BATTERY_STATUS_UNKNOWN);
+
+            boolean plugged = false;
+            switch (status) {
+                case BatteryManager.BATTERY_STATUS_CHARGING:
+                case BatteryManager.BATTERY_STATUS_FULL:
+                    plugged = true;
+                    break;
+            }
+
+>>>>>>> android-4.4_r1
             for (BatteryStateChangeCallback cb : mChangeCallbacks) {
                 cb.onBatteryLevelChanged(level, mBatteryPlugged);
             }

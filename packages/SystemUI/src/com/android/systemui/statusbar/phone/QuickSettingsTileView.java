@@ -18,6 +18,7 @@ package com.android.systemui.statusbar.phone;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.widget.FrameLayout;
 
@@ -25,7 +26,9 @@ import android.widget.FrameLayout;
  *
  */
 class QuickSettingsTileView extends FrameLayout {
+    private static final String TAG = "QuickSettingsTileView";
 
+    private int mContentLayoutId;
     private int mColSpan;
     private int mRowSpan;
     private int mCellWidth;
@@ -33,6 +36,7 @@ class QuickSettingsTileView extends FrameLayout {
     public QuickSettingsTileView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
+        mContentLayoutId = -1;
         mColSpan = 1;
         mRowSpan = 1;
     }
@@ -46,6 +50,35 @@ class QuickSettingsTileView extends FrameLayout {
     }
 
     void setContent(int layoutId, LayoutInflater inflater) {
+        mContentLayoutId = layoutId;
         inflater.inflate(layoutId, this);
     }
+<<<<<<< HEAD
 }
+=======
+
+    void reinflateContent(LayoutInflater inflater) {
+        if (mContentLayoutId != -1) {
+            removeAllViews();
+            setContent(mContentLayoutId, inflater);
+        } else {
+            Log.e(TAG, "Not reinflating content: No layoutId set");
+        }
+    }
+
+    @Override
+    public void setVisibility(int vis) {
+        if (QuickSettings.DEBUG_GONE_TILES) {
+            if (vis == View.GONE) {
+                vis = View.VISIBLE;
+                setAlpha(0.25f);
+                setEnabled(false);
+            } else {
+                setAlpha(1f);
+                setEnabled(true);
+            }
+        }
+        super.setVisibility(vis);
+    }
+}
+>>>>>>> android-4.4_r1

@@ -16,34 +16,29 @@
 
 package com.android.systemui.statusbar.policy;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.animation.LayoutTransition;
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.Slog;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 
 import com.android.systemui.ExpandHelper;
 import com.android.systemui.R;
 import com.android.systemui.SwipeHelper;
+import com.android.systemui.statusbar.ExpandableNotificationRow;
 import com.android.systemui.statusbar.NotificationData;
 
 import java.util.HashMap;
 
-public class NotificationRowLayout 
-        extends LinearLayout 
+public class NotificationRowLayout
+        extends LinearLayout
         implements SwipeHelper.Callback, ExpandHelper.Callback
 {
     private static final String TAG = "NotificationRowLayout";
@@ -61,7 +56,10 @@ public class NotificationRowLayout
     HashMap<View, ValueAnimator> mDisappearingViews = new HashMap<View, ValueAnimator>();
 
     private SwipeHelper mSwipeHelper;
+<<<<<<< HEAD
     private HashMap<View, Runnable> mDismissRunnables = new HashMap<View, Runnable>();
+=======
+>>>>>>> android-4.4_r1
 
     private OnSizeChangedListener mOnSizeChangedListener;
 
@@ -81,18 +79,18 @@ public class NotificationRowLayout
         mRealLayoutTransition = new LayoutTransition();
         mRealLayoutTransition.setAnimateParentHierarchy(true);
         setLayoutTransitionsEnabled(true);
-        
+
         setOrientation(LinearLayout.VERTICAL);
 
         if (DEBUG) {
             setOnHierarchyChangeListener(new ViewGroup.OnHierarchyChangeListener() {
                 @Override
                 public void onChildViewAdded(View parent, View child) {
-                    Slog.d(TAG, "view added: " + child + "; new count: " + getChildCount());
+                    Log.d(TAG, "view added: " + child + "; new count: " + getChildCount());
                 }
                 @Override
                 public void onChildViewRemoved(View parent, View child) {
-                    Slog.d(TAG, "view removed: " + child + "; new count: " + (getChildCount() - 1));
+                    Log.d(TAG, "view removed: " + child + "; new count: " + (getChildCount() - 1));
                 }
             });
 
@@ -160,19 +158,24 @@ public class NotificationRowLayout
     }
 
     public boolean canChildBeExpanded(View v) {
-        return NotificationData.getIsExpandable(v);
+        return v instanceof ExpandableNotificationRow
+                && ((ExpandableNotificationRow) v).isExpandable();
     }
 
-    public boolean setUserExpandedChild(View v, boolean userExpanded) {
-        return NotificationData.setUserExpanded(v, userExpanded);
+    public void setUserExpandedChild(View v, boolean userExpanded) {
+        if (v instanceof ExpandableNotificationRow) {
+            ((ExpandableNotificationRow) v).setUserExpanded(userExpanded);
+        }
     }
 
-    public boolean setUserLockedChild(View v, boolean userLocked) {
-        return NotificationData.setUserLocked(v, userLocked);
+    public void setUserLockedChild(View v, boolean userLocked) {
+        if (v instanceof ExpandableNotificationRow) {
+            ((ExpandableNotificationRow) v).setUserLocked(userLocked);
+        }
     }
 
     public void onChildDismissed(View v) {
-        if (DEBUG) Slog.v(TAG, "onChildDismissed: " + v + " mRemoveViews=" + mRemoveViews);
+        if (DEBUG) Log.v(TAG, "onChildDismissed: " + v + " mRemoveViews=" + mRemoveViews);
         final View veto = v.findViewById(R.id.veto);
         if (veto != null && veto.getVisibility() != View.GONE && mRemoveViews) {
             veto.performClick();
@@ -242,7 +245,7 @@ public class NotificationRowLayout
      * get removed properly.
      */
     public void setViewRemoval(boolean removeViews) {
-        if (DEBUG) Slog.v(TAG, "setViewRemoval: " + removeViews);
+        if (DEBUG) Log.v(TAG, "setViewRemoval: " + removeViews);
         mRemoveViews = removeViews;
     }
 
@@ -277,7 +280,7 @@ public class NotificationRowLayout
         super.onDraw(c);
         if (DEBUG) logLayoutTransition();
         if (DEBUG) {
-            //Slog.d(TAG, "onDraw: canvas height: " + c.getHeight() + "px; measured height: "
+            //Log.d(TAG, "onDraw: canvas height: " + c.getHeight() + "px; measured height: "
             //        + getMeasuredHeight() + "px");
             c.save();
             c.clipRect(6, 6, c.getWidth() - 6, getMeasuredHeight() - 6,

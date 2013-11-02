@@ -24,6 +24,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+<<<<<<< HEAD
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.database.ContentObserver;
@@ -33,20 +34,25 @@ import android.graphics.drawable.Drawable;
 import android.provider.AlarmClock;
 import android.os.Handler;
 import android.provider.Settings;
+=======
+import android.os.Bundle;
+>>>>>>> android-4.4_r1
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
 import android.text.style.CharacterStyle;
-import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
-import android.text.style.RelativeSizeSpan;
-import android.text.style.StyleSpan;
 import android.util.AttributeSet;
+<<<<<<< HEAD
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+=======
+>>>>>>> android-4.4_r1
 import android.widget.TextView;
 import com.android.internal.R;
+
+import com.android.systemui.DemoMode;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -55,12 +61,14 @@ import java.util.TimeZone;
 
 import libcore.icu.LocaleData;
 
-import com.android.internal.R;
-
 /**
  * Digital clock for the status bar.
  */
+<<<<<<< HEAD
 public class Clock extends TextView implements OnClickListener {
+=======
+public class Clock extends TextView implements DemoMode {
+>>>>>>> android-4.4_r1
     private boolean mAttached;
     private Calendar mCalendar;
     private Locale mLocale;
@@ -211,6 +219,7 @@ public class Clock extends TextView implements OnClickListener {
     };
 
     final void updateClock() {
+        if (mDemoMode) return;
         mCalendar.setTimeInMillis(System.currentTimeMillis());
         setText(getSmallTime());
     }
@@ -282,6 +291,10 @@ public class Clock extends TextView implements OnClickListener {
                 return formatted;
             }
         }
+<<<<<<< HEAD
+=======
+
+>>>>>>> android-4.4_r1
         return result;
     }
 
@@ -332,6 +345,34 @@ public class Clock extends TextView implements OnClickListener {
         return sdf;
 
     }
+<<<<<<< HEAD
+=======
+
+    private boolean mDemoMode;
+
+    @Override
+    public void dispatchDemoCommand(String command, Bundle args) {
+        if (!mDemoMode && command.equals(COMMAND_ENTER)) {
+            mDemoMode = true;
+        } else if (mDemoMode && command.equals(COMMAND_EXIT)) {
+            mDemoMode = false;
+            updateClock();
+        } else if (mDemoMode && command.equals(COMMAND_CLOCK)) {
+            String millis = args.getString("millis");
+            String hhmm = args.getString("hhmm");
+            if (millis != null) {
+                mCalendar.setTimeInMillis(Long.parseLong(millis));
+            } else if (hhmm != null && hhmm.length() == 4) {
+                int hh = Integer.parseInt(hhmm.substring(0, 2));
+                int mm = Integer.parseInt(hhmm.substring(2));
+                mCalendar.set(Calendar.HOUR, hh);
+                mCalendar.set(Calendar.MINUTE, mm);
+            }
+            setText(getSmallTime());
+        }
+    }
+}
+>>>>>>> android-4.4_r1
 
     private void updateSettings(){
         ContentResolver resolver = mContext.getContentResolver();
