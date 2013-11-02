@@ -21,7 +21,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.location.CountryDetector;
-import android.location.Country;
 import android.net.Uri;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.Data;
@@ -550,8 +549,6 @@ public class CallerInfo {
             if (VDBG) Rlog.v(TAG, "- parsed number: " + pn);
         } catch (NumberParseException e) {
             Rlog.w(TAG, "getGeoDescription: NumberParseException for incoming number '" + number + "'");
-        } catch (Exception e) {
-            Log.w(TAG, "Exception Caught" + e);
         }
 
         if (pn != null) {
@@ -569,17 +566,14 @@ public class CallerInfo {
      */
     private static String getCurrentCountryIso(Context context, Locale locale) {
       String countryIso;
-      Country country;
       CountryDetector detector = (CountryDetector) context.getSystemService(
           Context.COUNTRY_DETECTOR);
-      if ((detector != null) && ((country = detector.detectCountry()) != null)) {
-              countryIso = country.getCountryIso();
-      } else if (locale != null) {
-           countryIso = locale.getCountry();
-           Rlog.w(TAG, "No CountryDetector; falling back to countryIso based on locale: "
-                  + countryIso);
+      if (detector != null) {
+        countryIso = detector.detectCountry().getCountryIso();
       } else {
-           countryIso = "US"; //default value is "US"
+        countryIso = locale.getCountry();
+        Rlog.w(TAG, "No CountryDetector; falling back to countryIso based on locale: "
+              + countryIso);
       }
       return countryIso;
     }

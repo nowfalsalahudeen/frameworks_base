@@ -21,7 +21,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.location.CountryDetector;
-import android.location.Country;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -272,17 +271,11 @@ public class CallerInfoAsyncQuery {
 
                     // Use the number entered by the user for display.
                     if (!TextUtils.isEmpty(cw.number)) {
-                        Country country;
                         CountryDetector detector = (CountryDetector) mQueryContext.getSystemService(
                                 Context.COUNTRY_DETECTOR);
-                        if (detector != null) {
-                            country = detector.detectCountry();
-                            if (country != null) {
-                                mCallerInfo.phoneNumber = PhoneNumberUtils.formatNumber(cw.number,
-                                    mCallerInfo.normalizedNumber,
-                                    country.getCountryIso());
-                            }
-                        }
+                        mCallerInfo.phoneNumber = PhoneNumberUtils.formatNumber(cw.number,
+                                mCallerInfo.normalizedNumber,
+                                detector.detectCountry().getCountryIso());
                     }
                 }
 

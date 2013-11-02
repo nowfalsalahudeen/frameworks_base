@@ -1,9 +1,6 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
  *
- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
- * Not a Contribution.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,7 +31,6 @@ import android.view.WindowManager;
 import android.widget.TextView.OnEditorActionListener;
 
 import com.android.internal.telephony.ITelephony;
-import com.android.internal.telephony.PhoneConstants;
 
 import com.android.internal.R;
 
@@ -44,18 +40,18 @@ import com.android.internal.R;
 public class KeyguardSimPukView extends KeyguardAbsKeyInputView
         implements KeyguardSecurityView, OnEditorActionListener, TextWatcher {
 
-    protected ProgressDialog mSimUnlockProgressDialog = null;
-    protected volatile boolean mCheckInProgress;
-    protected String mPukText;
-    protected String mPinText;
-    protected StateMachine mStateMachine = new StateMachine();
+    private ProgressDialog mSimUnlockProgressDialog = null;
+    private volatile boolean mCheckInProgress;
+    private String mPukText;
+    private String mPinText;
+    private StateMachine mStateMachine = new StateMachine();
 
-    protected class StateMachine {
+    private class StateMachine {
         final int ENTER_PUK = 0;
         final int ENTER_PIN = 1;
         final int CONFIRM_PIN = 2;
         final int DONE = 3;
-        protected int state = ENTER_PUK;
+        private int state = ENTER_PUK;
 
         public void next() {
             int msg = 0;
@@ -91,26 +87,10 @@ public class KeyguardSimPukView extends KeyguardAbsKeyInputView
         }
 
         void reset() {
-            String  displayMessage = "";
-            try {
-                int attemptsRemaining = ITelephony.Stub.asInterface(ServiceManager
-                        .checkService("phone")).getIccPin1RetryCount();
-                if (attemptsRemaining >= 0) {
-                    displayMessage = getContext().getString(
-                            R.string.keyguard_password_wrong_puk_code)
-                            + getContext().getString(R.string.pinpuk_attempts)
-                            + attemptsRemaining + ". ";
-                }
-            } catch (RemoteException ex) {
-                displayMessage = getContext().getString(
-                        R.string.keyguard_password_puk_failed);
-            }
-            displayMessage = displayMessage
-                    + getContext().getString(R.string.kg_puk_enter_puk_hint);
             mPinText="";
             mPukText="";
             state = ENTER_PUK;
-            mSecurityMessageDisplay.setMessage(displayMessage, true);
+            mSecurityMessageDisplay.setMessage(R.string.kg_puk_enter_puk_hint, true);
             mPasswordEntry.requestFocus();
         }
     }
@@ -211,13 +191,13 @@ public class KeyguardSimPukView extends KeyguardAbsKeyInputView
             mPin = pin;
         }
 
-        abstract void onSimLockChangedResponse(final int result);
+        abstract void onSimLockChangedResponse(boolean success);
 
         @Override
         public void run() {
             try {
-                final int result = ITelephony.Stub.asInterface(ServiceManager
-                        .checkService("phone")).supplyPukReportResult(mPuk, mPin);
+                final boolean result = ITelephony.Stub.asInterface(ServiceManager
+                        .checkService("phone")).supplyPuk(mPuk, mPin);
 
                 post(new Runnable() {
                     public void run() {
@@ -227,14 +207,14 @@ public class KeyguardSimPukView extends KeyguardAbsKeyInputView
             } catch (RemoteException e) {
                 post(new Runnable() {
                     public void run() {
-                        onSimLockChangedResponse(PhoneConstants.PIN_GENERAL_FAILURE);
+                        onSimLockChangedResponse(false);
                     }
                 });
             }
         }
     }
 
-    protected Dialog getSimUnlockProgressDialog() {
+    private Dialog getSimUnlockProgressDialog() {
         if (mSimUnlockProgressDialog == null) {
             mSimUnlockProgressDialog = new ProgressDialog(mContext);
             mSimUnlockProgressDialog.setMessage(
@@ -249,7 +229,7 @@ public class KeyguardSimPukView extends KeyguardAbsKeyInputView
         return mSimUnlockProgressDialog;
     }
 
-    protected boolean checkPuk() {
+    private boolean checkPuk() {
         // make sure the puk is at least 8 digits long.
         if (mPasswordEntry.getText().length() >= 8) {
             mPukText = mPasswordEntry.getText().toString();
@@ -258,7 +238,7 @@ public class KeyguardSimPukView extends KeyguardAbsKeyInputView
         return false;
     }
 
-    protected boolean checkPin() {
+    private boolean checkPin() {
         // make sure the PIN is between 4 and 8 digits
         int length = mPasswordEntry.getText().length();
         if (length >= 4 && length <= 8) {
@@ -272,29 +252,23 @@ public class KeyguardSimPukView extends KeyguardAbsKeyInputView
         return mPinText.equals(mPasswordEntry.getText().toString());
     }
 
-    protected void updateSim() {
+    private void updateSim() {
         getSimUnlockProgressDialog().show();
 
         if (!mCheckInProgress) {
             mCheckInProgress = true;
             new CheckSimPuk(mPukText, mPinText) {
-                void onSimLockChangedResponse(final int result) {
+                void onSimLockChangedResponse(final boolean success) {
                     post(new Runnable() {
                         public void run() {
                             if (mSimUnlockProgressDialog != null) {
                                 mSimUnlockProgressDialog.hide();
                             }
-                            if (result == PhoneConstants.PIN_RESULT_SUCCESS) {
+                            if (success) {
                                 mCallback.dismiss(true);
                             } else {
-                                if (result == PhoneConstants.PIN_PASSWORD_INCORRECT) {
-                                    mSecurityMessageDisplay.setMessage
-                                            (R.string.kg_invalid_puk, true);
-                                } else {
-                                    mSecurityMessageDisplay.setMessage
-                                            (R.string.keyguard_password_puk_failed, true);
-                                }
                                 mStateMachine.reset();
+                                mSecurityMessageDisplay.setMessage(R.string.kg_invalid_puk, true);
                             }
                             mCheckInProgress = false;
                         }

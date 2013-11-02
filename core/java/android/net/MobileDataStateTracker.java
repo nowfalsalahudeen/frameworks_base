@@ -1,8 +1,5 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
- *
- * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +28,12 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.ServiceManager;
-import android.telephony.MSimTelephonyManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Slog;
 
 import com.android.internal.telephony.DctConstants;
 import com.android.internal.telephony.ITelephony;
-import com.android.internal.telephony.msim.ITelephonyMSim;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.util.AsyncChannel;
@@ -62,7 +57,6 @@ public class MobileDataStateTracker implements NetworkStateTracker {
 
     private PhoneConstants.DataState mMobileDataState;
     private ITelephony mPhoneService;
-    private ITelephonyMSim mMSimPhoneService;
 
     private String mApnType;
     private NetworkInfo mNetworkInfo;
@@ -321,13 +315,6 @@ public class MobileDataStateTracker implements NetworkStateTracker {
     }
 
     private void getPhoneService(boolean forceRefresh) {
-        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-            if (mMSimPhoneService == null || forceRefresh) {
-                mMSimPhoneService = ITelephonyMSim.Stub.asInterface(
-                        ServiceManager.getService("phone_msim"));
-            }
-            return;
-        }
         if ((mPhoneService == null) || forceRefresh) {
             mPhoneService = ITelephony.Stub.asInterface(ServiceManager.getService("phone"));
         }
@@ -356,7 +343,6 @@ public class MobileDataStateTracker implements NetworkStateTracker {
             networkTypeStr = "edge";
             break;
         case TelephonyManager.NETWORK_TYPE_UMTS:
-        case TelephonyManager.NETWORK_TYPE_TD_SCDMA:
             networkTypeStr = "umts";
             break;
         case TelephonyManager.NETWORK_TYPE_HSDPA:
@@ -512,33 +498,15 @@ public class MobileDataStateTracker implements NetworkStateTracker {
          * RemoteException and need to re-reference the service.
          */
         for (int retry = 0; retry < 2; retry++) {
-            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                if (mMSimPhoneService == null) {
-                    loge("Ignoring mobile radio request because "
-                            + "could not acquire MSim Phone Service");
-                    break;
-                }
+            if (mPhoneService == null) {
+                loge("Ignoring mobile radio request because could not acquire PhoneService");
+                break;
+            }
 
-                try {
-                    boolean result = true;
-                    for (int i = 0; i < MSimTelephonyManager.getDefault().getPhoneCount(); i++) {
-                        result = result && mMSimPhoneService.setRadio(turnOn, i);
-                    }
-                    return result;
-                } catch (RemoteException e) {
-                    if (retry == 0) getPhoneService(true);
-                }
-            } else {
-                if (mPhoneService == null) {
-                    loge("Ignoring mobile radio request because could not acquire PhoneService");
-                    break;
-                }
-
-                try {
-                    return mPhoneService.setRadio(turnOn);
-                } catch (RemoteException e) {
-                    if (retry == 0) getPhoneService(true);
-                }
+            try {
+                return mPhoneService.setRadio(turnOn);
+            } catch (RemoteException e) {
+                if (retry == 0) getPhoneService(true);
             }
         }
 
@@ -669,36 +637,19 @@ public class MobileDataStateTracker implements NetworkStateTracker {
          * RemoteException and need to re-reference the service.
          */
         for (int retry = 0; retry < 2; retry++) {
-            if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
-                if (mMSimPhoneService == null) {
-                    loge("Ignoring feature request because could not acquire MSim Phone Service");
-                    break;
-                }
+            if (mPhoneService == null) {
+                loge("Ignoring feature request because could not acquire PhoneService");
+                break;
+            }
 
-                try {
-                    if (enable) {
-                        return mMSimPhoneService.enableApnType(apnType);
-                    } else {
-                        return mMSimPhoneService.disableApnType(apnType);
-                    }
-                } catch (RemoteException e) {
-                    if (retry == 0) getPhoneService(true);
+            try {
+                if (enable) {
+                    return mPhoneService.enableApnType(apnType);
+                } else {
+                    return mPhoneService.disableApnType(apnType);
                 }
-            } else {
-                if (mPhoneService == null) {
-                    loge("Ignoring feature request because could not acquire PhoneService");
-                    break;
-                }
-
-                try {
-                    if (enable) {
-                        return mPhoneService.enableApnType(apnType);
-                    } else {
-                        return mPhoneService.disableApnType(apnType);
-                    }
-                } catch (RemoteException e) {
-                    if (retry == 0) getPhoneService(true);
-                }
+            } catch (RemoteException e) {
+                if (retry == 0) getPhoneService(true);
             }
         }
 

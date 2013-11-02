@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2012 The Android Open Source Project
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,12 +60,6 @@ public class SmsConstants {
     public enum MessageClass{
         UNKNOWN, CLASS_0, CLASS_1, CLASS_2, CLASS_3;
     }
-
-    /**
-     * Indicates unknown format SMS message.
-     * @hide pending API council approval
-     */
-    public static final String FORMAT_UNKNOWN = "unknown";
 
     /**
      * Indicates a 3GPP format SMS message.
