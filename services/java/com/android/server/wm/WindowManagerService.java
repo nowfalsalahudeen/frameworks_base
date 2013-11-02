@@ -5214,15 +5214,15 @@ public class WindowManagerService extends IWindowManager.Stub
         mInputManager.setInputFilter(filter);
     }
 
-    @Override
-    public void setTouchExplorationEnabled(boolean enabled) {
-        mPolicy.setTouchExplorationEnabled(enabled);
-    }
-
     // Called by window manager policy.  Not exposed externally.
     @Override
     public void reboot() {
-        ShutdownThread.reboot(getUiContext(), null, true);
+        ShutdownThread.reboot(mContext, null, true);
+    }
+
+    @Override
+    public void setTouchExplorationEnabled(boolean enabled) {
+        mPolicy.setTouchExplorationEnabled(enabled);
     }
 
     public void setCurrentUser(final int newUserId) {
