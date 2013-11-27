@@ -104,6 +104,7 @@ jint android_os_FileUtils_getVolumeUUID(JNIEnv* env, jobject clazz, jstring path
         }
     }
     return -1;
+}
 
 jint android_os_FileUtils_setPermissions(JNIEnv* env, jobject clazz,
                                          jstring file, jint mode,
