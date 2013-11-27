@@ -37,7 +37,6 @@ import javax.microedition.khronos.opengles.GL;
  * Canvas and Drawables</a> developer guide.</p></div>
  */
 public class Canvas {
-
     // assigned in constructors or setBitmap, freed in finalizer
     /** @hide */
     public int mNativeCanvas;
