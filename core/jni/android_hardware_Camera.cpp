@@ -389,7 +389,6 @@ static void android_hardware_Camera_setLongshot(JNIEnv *env, jobject thiz, jbool
 {
     ALOGV("setLongshot");
 #if defined(QCOM_HARDWARE) && !defined(ICS_CAMERA_BLOB)
-    return;
     JNICameraContext* context;
     status_t rc;
     sp<Camera> camera = get_native_camera(env, thiz, &context);
